@@ -6,7 +6,7 @@ library(vegan)
 library(ape)    
 library(geosphere)
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -155,6 +155,8 @@ pcs <- as.data.frame(pcoa_result$vectors)
 pcs_with_labels <- cbind(pcs, province = pca_labels$province, region = pca_labels$region, VOC_436_581 = pca_labels$VOC_436_581)
 
 pcs_with_labels$province <- factor(pcs_with_labels$province, levels = provinces)
+
+regions <- c("North", "Centre", "South")
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 # # Plot PCoA
@@ -265,7 +267,7 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(7, 0, 19))
+  scale_shape_manual(values = c(18, 1, 19, 1))
 
 af_pcoa
 
@@ -305,7 +307,7 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(7, 0, 19))
+  scale_shape_manual(values = c(18, 1, 19, 1))
 
 pa_pcoa
 
@@ -351,7 +353,7 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(7, 0, 19))
+  scale_shape_manual(values = c(18, 1, 19, 1))
 
 af_pcoa
 
@@ -391,7 +393,7 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(7, 0, 19))
+  scale_shape_manual(values = c(18, 1, 19, 1))
 
 pa_pcoa
 
@@ -476,16 +478,17 @@ rearranged_processed_allele_freq_results_province <- rearranged_processed_allele
 
 library(stringr)
 # Split row names by the last "_"
-metadata_province <- rownames(rearranged_processed_allele_freq_results_province)
+province_region_eq <- data.frame(
+  metadata_province = c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy"),
+  metadata_region = c("North", "North", "North", "Centre", "Centre", "Centre", "Centre", "South", "South")
+)
 
-province_region_eq <- as.data.frame(cbind(metadata_province = as.character(metadata_province), metadata_region = metadata_region))
 province_region_eq <- rbind(province_region_eq, c("Maputo", "South"), c("Manica", "Centre"))
-
-
+metadata_province <- rownames(rearranged_processed_allele_freq_results_province)
 metadata_province <- factor(metadata_province, levels = provinces)
-
 metadata_mapping <- merge(data.frame(metadata_province), province_region_eq, by = "metadata_province", all.x = TRUE)
 metadata_region <- metadata_mapping$metadata_region
+
 
 
 # tsne of provinces
