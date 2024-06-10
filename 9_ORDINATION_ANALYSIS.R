@@ -5,6 +5,7 @@ library(ggplot2)
 library(vegan)
 library(ape)    
 library(geosphere)
+library(Rtsne)
 
 SAMPLING <- 2021 # 2021 or 2022
 
@@ -267,7 +268,7 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 19, 1))
+  scale_shape_manual(values = c(18, 1, 2, 19))
 
 af_pcoa
 
@@ -307,7 +308,7 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 19, 1))
+  scale_shape_manual(values = c(18, 1, 2, 19))
 
 pa_pcoa
 
@@ -353,7 +354,7 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 19, 1))
+  scale_shape_manual(values = c(18, 1, 2, 19))
 
 af_pcoa
 
@@ -393,7 +394,7 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 19, 1))
+  scale_shape_manual(values = c(18, 1, 2, 19))
 
 pa_pcoa
 
