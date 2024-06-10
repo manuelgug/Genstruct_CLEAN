@@ -7,7 +7,7 @@ library(ape)
 library(geosphere)
 library(Rtsne)
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -143,6 +143,17 @@ rearranged_pres_abs <- rearranged_pres_abs %>%
 
 #PCoA
 
+if (SAMPLING == 2022){
+  
+  shapes <- c(13, 12, 11, 1, 19)
+  shapes2 <- c(13, 1, 19)
+  
+}else if (SAMPLING == 2021){
+  
+  shapes <-  c(13, 12, 11, 10, 9, 19)
+  shapes2 <- c(13, 10, 11, 19)
+}
+
 # Compute Bray-Curtis dissimilarity matrix
 bray_curtis_dist <- vegdist(rearranged, method = "bray")
 
@@ -173,7 +184,8 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
-  scale_color_manual(values = province_colors)
+  scale_color_manual(values = province_colors)+
+  scale_shape_manual(values = shapes)
 
 af_pcoa
 
@@ -194,6 +206,7 @@ pcs_with_labels <- cbind(pcs, province = pca_labels$province, region = pca_label
 pcs_with_labels$province <- factor(pcs_with_labels$province, levels = provinces)
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
+
 # # Plot PCoA
 variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
 variance_explained_axis1 <- variance_explained$Eigenvalues[1]
@@ -206,7 +219,8 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        x = paste0("PCo 1: ", variance_explained_axis1, "%\n"),
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
-  scale_color_manual(values = province_colors)
+  scale_color_manual(values = province_colors)+
+  scale_shape_manual(values = shapes)
 
 pa_pcoa
 
@@ -268,7 +282,7 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 2, 19))
+  scale_shape_manual(values = shapes2)
 
 af_pcoa
 
@@ -308,7 +322,7 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 2, 19))
+  scale_shape_manual(values = shapes2)
 
 pa_pcoa
 
@@ -354,7 +368,7 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme_minimal()+
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 2, 19))
+  scale_shape_manual(values = shapes2)
 
 af_pcoa
 
@@ -394,7 +408,7 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = c(18, 1, 2, 19))
+  scale_shape_manual(values = shapes2)
 
 pa_pcoa
 
