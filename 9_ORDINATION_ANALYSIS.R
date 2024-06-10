@@ -7,7 +7,7 @@ library(ape)
 library(geosphere)
 library(Rtsne)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -592,6 +592,12 @@ res <- perform_mantel_test(bray_curtis_dist, geo_dist)
 # perform_mantel_test(gower_dist, geo_dist)
 
 p <- res$plot
-p
+
+pval <- round(res$mantel_result$signif, 3)
+mantelsR <- round(res$mantel_result$statistic,3)
+
+p <- p + 
+  annotate("text", x = Inf, y = -Inf, label = paste("Mantel's R:", mantelsR, "\n", "p-value:", pval), 
+           hjust = 1.1, vjust = -0.5, size = 5, color = "black")
 
 ggsave(paste0("mantel_pop_allele_Freqs", SAMPLING,".png"), p, width = 8, height = 6, bg = "white")
