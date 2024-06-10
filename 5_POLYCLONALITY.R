@@ -1,6 +1,10 @@
+library(dplyr)
+library(haven)
+library(ggplot2)
+library(reshape2)
+library(ggpubr)
 
-
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 ####################################################
 
@@ -324,3 +328,4 @@ scatter_plot <- ggplot(coi_for_db, aes(x = naive_coi, y = post_effective_coi_med
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(paste0("scatter_plot_",SAMPLING,".png"), scatter_plot, width = 8, height = 5, bg = "white")
+
