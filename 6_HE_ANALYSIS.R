@@ -3,7 +3,7 @@ library(ggsignif)
 library(ggplot2)
 library(dplyr)
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -20,8 +20,8 @@ if (SAMPLING == 2022){
   
 } else if (SAMPLING == 2021){
   
-  provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane") #ordered from north to south "Maputo" out because small N
-  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen", Manica = "green", Inhambane = "cornflowerblue") #Maputo = "deepskyblue"
+  provinces <- c("Niassa", "Nampula", "Zambezia", "Inhambane") #ordered from north to south "Maputo" and "Manica" out because small N
+  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen",  Inhambane = "cornflowerblue") #Maputo = "deepskyblue", Manica = "green",
   
 }else{
   
@@ -100,7 +100,7 @@ processed_He_results <- processed_He_results %>%
 
 if (SAMPLING == 2021){
   
-  processed_He_results <- processed_He_results[!(processed_He_results$population %in% c("Maputo")), ] # remove MAPUTO because N too small
+  processed_He_results <- processed_He_results[!(processed_He_results$population %in% c("Maputo", "Manica")), ] # remove MAPUTO because N too small
   
 }
 
