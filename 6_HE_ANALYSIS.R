@@ -1,4 +1,7 @@
 
+library(ggsignif)
+library(ggplot2)
+
 SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
@@ -253,13 +256,70 @@ population_levels <- provinces
 results_list_provinces <- lapply(provinces, fit_and_collect_results, pop = "province")
 results_provinces <- analyze_results(results_list_provinces, pop = "province")
 
+##############################
+#add significance to plot
+plotp <- results_provinces[[1]]
+sigs <- results_provinces$llm_tables_significant_pariwise
+anovap_for_plot <- paste0("Anova's p = ", round(results_provinces$anovap$`p-value`[2], 3))
+
+
+# Create a list of comparisons for ggsignif
+comparisons <- lapply(1:nrow(sigs), function(i) {
+  c(as.character(sigs$reference_pop[i]), as.character(sigs$compared_pop[i]))
+})
+
+final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  theme_minimal() +
+  labs(title = "",
+       x = "Province",
+       y = "He estimate") +
+  geom_signif(
+    comparisons = comparisons,
+    annotations = sigs$significance,
+    y_position = seq(max(plotp$data$upper) + 0.01, by = 0.01, length.out = nrow(sigs)),
+    tip_length = 0.01
+  )+
+  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
+################################
+
+
 write.csv(results_provinces$llm_tables_significant_pariwise, paste0("lmm_tables_significant_pariwise_provinces_", SAMPLING, ".csv"), row.names = F)
-ggsave(paste0("province_He_lmm_", SAMPLING, ".png"), results_provinces[[1]], width = 8, height = 6, bg = "white")
+ggsave(paste0("province_He_lmm_", SAMPLING, ".png"), final_plot, width = 8, height = 6, bg = "white")
+
+
 
 #PREGIONS
 population_levels <- regions
 results_list_regions <- lapply(regions, fit_and_collect_results, pop = "region")
 results_regions <- analyze_results(results_list_regions, pop = "region")
 
+##############################
+#add significance to plot
+plotp <- results_regions[[1]]
+sigs <- results_regions$llm_tables_significant_pariwise
+anovap_for_plot <- paste0("Anova's p = ", round(results_regions$anovap$`p-value`[2], 3))
+
+# Create a list of comparisons for ggsignif
+comparisons <- lapply(1:nrow(sigs), function(i) {
+  c(as.character(sigs$reference_pop[i]), as.character(sigs$compared_pop[i]))
+})
+
+final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  theme_minimal() +
+  labs(title = "",
+       x = "Region",
+       y = "He estimate") +
+  geom_signif(
+    comparisons = comparisons,
+    annotations = sigs$significance,
+    y_position = seq(max(plotp$data$upper) + 0.01, by = 0.01, length.out = nrow(sigs)),
+    tip_length = 0.01
+  )
+################################
+
 write.csv(results_regions$llm_tables_significant_pariwise, paste0("lmm_tables_significant_pariwise_regions_", SAMPLING, ".csv"), row.names = F)
-ggsave(paste0("region_He_lmm_", SAMPLING, ".png"), results_regions[[1]], width = 8, height = 6, bg = "white")
+ggsave(paste0("region_He_lmm_", SAMPLING, ".png"), final_plot, width = 8, height = 6, bg = "white")
