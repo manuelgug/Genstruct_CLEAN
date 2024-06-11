@@ -5,7 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(reshape2)
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -202,20 +202,33 @@ median_data <- aggregate(estimate ~ conn_provinces, sorted_df, median)
 # Reorder conn_regions based on the median values in descending order
 sorted_df$conn_provinces <- factor(sorted_df$conn_provinces, levels = median_data[order(-median_data$estimate), "conn_provinces"])
 
+sorted_df$conn_provinces <- factor(sorted_df$conn_provinces)
+
+# Define custom colors for each conn_province
+custom_colors <- c(
+  "South_Centre" = "#1f77b4",  # Blue
+  "South_South" = "#ff7f0e",  # Orange
+  "Centre_North" = "#2ca02c",  # Green
+  "North_North" = "#d62728",  # Red
+  "South_North" = "#9467bd",  # Purple
+  "Centre_Centre" = "#8c564b"  # Brown
+)
+
 # Plot with legend and sorted x-axis
-prov_conn<- ggplot(sorted_df, aes(x = conn_provinces, y = estimate, fill = conn_regions)) +
-  geom_violin(width = 1, aes(color = conn_regions), alpha = 0.4) +
-  geom_boxplot(width = 0.1, aes(color = conn_regions), fill = "white", alpha = 0.4) +
+prov_conn<- ggplot(sorted_df, aes(x = conn_provinces, y = estimate, fill = conn_regions, color = conn_regions)) +
+  geom_violin(width = 1, alpha = 0.4) +
+  geom_boxplot(width = 0.1, alpha = 0.4) +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 11), 
     axis.text.x = element_text(angle = 90, hjust = 1)
   ) +
-  scale_fill_discrete(name = "Province") +  # Customize legend title
-  ggtitle("Province Connectivity") +
-  xlab("")+
-  ylab("IBD")+
-  guides(color =FALSE)
+  scale_fill_manual(values = custom_colors) +  # Apply custom colors for fill
+  scale_color_manual(values = custom_colors) +  # Apply custom colors for lines
+  ggtitle("") +
+  xlab("") +
+  ylab("IBD") +
+  guides(color = FALSE)
 
 prov_conn
 
@@ -230,18 +243,20 @@ median_data <- aggregate(estimate ~ conn_regions, sorted_df, median)
 sorted_df$conn_regions <- factor(sorted_df$conn_regions, levels = median_data[order(-median_data$estimate), "conn_regions"])
 
 # Plot with legend and sorted x-axis
-reg_conn <- ggplot(sorted_df, aes(x = conn_regions, y = estimate, fill = conn_regions)) +
-  geom_violin(width = 1, aes(color = conn_regions), alpha = 0.4) +
-  geom_boxplot(width = 0.1, aes(color = conn_regions), fill = "white", alpha = 0.4) +
+reg_conn <- ggplot(sorted_df, aes(x = conn_regions, y = estimate, fill = conn_regions, color = conn_regions)) +
+  geom_violin(width = 1, alpha = 0.4) +
+  geom_boxplot(width = 0.1, fill = "white", alpha = 0.4) +
   theme_minimal() +
   theme(
     plot.title = element_text(size = 11), 
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
-  ggtitle("Region Connectivity") +
-  xlab("")+
-  ylab("IBD")+
-  guides(color = FALSE, fill =FALSE) 
+  scale_fill_manual(values = custom_colors) +  # Apply custom colors for fill
+  scale_color_manual(values = custom_colors) +  # Apply custom colors for lines
+  ggtitle("") +
+  xlab("") +
+  ylab("IBD") +
+  guides(color = FALSE, fill = FALSE) 
 
 reg_conn
 
@@ -311,6 +326,8 @@ prop_ibd_prov <- ggplot(ibd_samples_provinces, aes(x = pairwise_comparison, y = 
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(x = "", y = "proportion of samples") +
+  scale_fill_manual(values = custom_colors) +  # Apply custom colors for fill
+  scale_color_manual(values = custom_colors) +  # Apply custom colors for lines
   #ggtitle("proportion of significantly related IBD samples")+
   guides(color = FALSE) 
 
@@ -356,7 +373,9 @@ prop_ibd_reg <- ggplot(ibd_samples_regions, aes(x = pairwise_comparison, y = per
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = "Pairwise Comparison", y = "Percentage of IBD Samples") +
-  ggtitle("Percentage of IBD Samples by Pairwise Comparison")+
+  #ggtitle("Percentage of IBD Samples by Pairwise Comparison")+
+  scale_fill_manual(values = custom_colors) +  # Apply custom colors for fill
+  scale_color_manual(values = custom_colors) +  # Apply custom colors for lines
   guides(color = FALSE, fill =FALSE) 
 
 prop_ibd_reg
