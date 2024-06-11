@@ -2,7 +2,7 @@
 library(ggsignif)
 library(ggplot2)
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -272,6 +272,7 @@ final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
   geom_point() +
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
   theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   labs(title = "",
        x = "Province",
        y = "He estimate") +
@@ -310,6 +311,7 @@ final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
   geom_point() +
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
   theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   labs(title = "",
        x = "Region",
        y = "He estimate") +
@@ -318,7 +320,8 @@ final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
     annotations = sigs$significance,
     y_position = seq(max(plotp$data$upper) + 0.01, by = 0.01, length.out = nrow(sigs)),
     tip_length = 0.01
-  )
+  )+
+  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
 ################################
 
 write.csv(results_regions$llm_tables_significant_pariwise, paste0("lmm_tables_significant_pariwise_regions_", SAMPLING, ".csv"), row.names = F)
