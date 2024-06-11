@@ -1,4 +1,7 @@
 
+library(dplyr)
+library(ggplot2)
+
 SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
@@ -16,8 +19,10 @@ if (SAMPLING == 2022){
   
 } else if (SAMPLING == 2021){
   
-  provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane", "Maputo") #ordered from north to south
-  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen", Manica = "green", Inhambane = "cornflowerblue", Maputo = "deepskyblue")
+  combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo", "Manica")), ] # remove dry
+  
+  provinces <- c("Niassa", "Nampula", "Zambezia", "Inhambane") #ordered from north to south "Maputo" and "Manica" out because small N
+  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen",  Inhambane = "cornflowerblue") #Maputo = "deepskyblue", Manica = "green",
   
 }else{
   
@@ -92,18 +97,11 @@ processed_He_results <- processed_He_results %>%
   mutate(geo = ifelse(str_detect(population, "North|South|Centre"), "region", "province"))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+if (SAMPLING == 2021){
+  
+  processed_He_results <- processed_He_results[!(processed_He_results$population %in% c("Maputo", "Manica")), ] # remove MAPUTO because N too small
+  
+}
 
 
 #separate provinces and regions
@@ -279,7 +277,7 @@ heatmap_regions <- ggplot(final_table, aes(x = pop2, y = pop1, fill = Fst_estima
   geom_text(color = "black") +
   scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(final_table$Fst_estimate), max(final_table$Fst_estimate))) +  # Adjust scale limits
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   labs(x = "", y = "")
 
 #significance
@@ -312,7 +310,7 @@ fst_regions <- ggplot(na.omit(final_table), aes(x = comparison, y = est., color 
        x = "Pairwise comparisons",
        y = "Fst Estimate") +
   scale_color_manual(values = c("black", "red")) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   theme_minimal()+
   annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
 
@@ -454,7 +452,7 @@ heatmap_provinces <- ggplot(final_table, aes(x = pop2, y = pop1, fill = Fst_esti
   geom_text(color = "black") +
   scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(final_table$Fst_estimate), max(final_table$Fst_estimate))) +  # Adjust scale limits
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   labs(x = "", y = "")
 
 #significance
@@ -488,7 +486,7 @@ fst_provinces <- ggplot(na.omit(final_table), aes(x = comparison, y = est., colo
        y = "Fst Estimate") +
   scale_color_manual(values = c("black", "red")) +
   theme_minimal()+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
   annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
 
 #fst_regions
