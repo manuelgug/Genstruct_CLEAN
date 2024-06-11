@@ -17,7 +17,7 @@ library(dplyr)
 db <- read_dta('DrugRes_2021_2022_DB_ALLDATA_1Jan2024.dta')
 
 # indicate sampling
-SAMPLING <- 2021 # 2022 or 2021
+SAMPLING <- 2022 # 2022 or 2021
 
 
 #######################################################
@@ -153,6 +153,10 @@ combined_df_merged$allele <- paste0(combined_df_merged$locus, "_", combined_df_m
 
 combined_df_merged <- as.data.frame(combined_df_merged)
 
+#remove Dry 
+combined_df_merged <- combined_df_merged %>%
+  filter(!grepl("Dry", province))
+
 
 # FILTERING RESULTS
 SS <- length(unique(combined_df_merged$NIDA2))
@@ -167,10 +171,7 @@ sample_size_provinces <- combined_df_merged %>%
 
 sample_size_provinces
 
-combined_df_merged_nodry <- combined_df_merged %>%
-  filter(!grepl("Dry", province))
-
-sample_size_regions <- combined_df_merged_nodry %>%
+sample_size_regions <- combined_df_merged %>%
   group_by(year, region) %>%
   summarise(unique_NIDA2_count = n_distinct(NIDA2))
 
