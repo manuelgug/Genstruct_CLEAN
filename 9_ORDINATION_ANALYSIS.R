@@ -6,8 +6,9 @@ library(vegan)
 library(ape)    
 library(geosphere)
 library(Rtsne)
+library(reshape2)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
