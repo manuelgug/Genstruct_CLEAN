@@ -1,4 +1,8 @@
 
+library(vegan)
+library(dplyr)
+library(RColorBrewer)
+
 # assess suficiency of sampling
 
 #input: combined_df_merged_SAMPLING_only.RDS
