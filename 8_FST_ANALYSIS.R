@@ -2,7 +2,7 @@
 library(dplyr)
 library(ggplot2)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -204,26 +204,53 @@ fst_results_df$Hs <- round(as.numeric(fst_results_df$Hs),3)
 fst_results_df$Ht <- ((fst_results_df$n1 * fst_results_df$Hs1)+ (fst_results_df$n2 * fst_results_df$Hs2))/(fst_results_df$n1 + fst_results_df$n2)
 fst_results_df$Ht <- round(as.numeric(fst_results_df$Ht),3)
 
-# Define a function to calculate FST
-calculate_FST <- function(data, indices) {
-  sampled_data <- data[indices, ]
-  
-  # Extract pre-calculated Hs and Ht values
-  Hs <- sampled_data$Hs
-  Ht <- sampled_data$Ht
-  
-  # Calculate FST
-  FST <- ((Ht - Hs) / Ht)
-  
-  return(FST)
-}
+# # Define a function to calculate FST
+# calculate_FST <- function(data, indices) {
+#   sampled_data <- data[indices, ]
+#   
+#   # Extract pre-calculated Hs and Ht values
+#   Hs <- sampled_data$Hs
+#   Ht <- sampled_data$Ht
+#   
+#   # Calculate FST
+#   FST <- ((Ht - Hs) / Ht)
+#   
+#   return(FST)
+# }
+# 
+# #for each locus, just in case it's needed
+# fst_results_df$Fst <- (fst_results_df$Ht - fst_results_df$Hs)/fst_results_df$Ht
+# 
+# ### BOOTSTRAP: NON-PARAMETRIC APPROACH TO LME
+# 
+# set.seed(123) # For reproducibility
+# n_permutations <- 1000
+# observed_means <- aggregate(fst ~ comparison, data = FST_LLM, mean)
+# 
+# perm_means <- replicate(n_permutations, {
+#   perm_data <- FST_LLM
+#   perm_data$comparison <- sample(perm_data$comparison)
+#   perm_agg <- aggregate(fst ~ comparison, data = perm_data, mean)
+#   perm_agg$fst
+# })
+# 
+# p_values <- sapply(1:nrow(observed_means), function(i) {
+#   mean(observed_means$fst[i] <= perm_means[i, ])
+# })
+# 
+# results <- data.frame(
+#   comparison = observed_means$comparison,
+#   observed_mean_fst = observed_means$fst,
+#   p_value = p_values
+# )
+# 
+# results
 
-#for each locus, just in case it's needed
-fst_results_df$Fst <- (fst_results_df$Ht - fst_results_df$Hs)/fst_results_df$Ht
 
 
 #llm (interchangeable with boostrat analysis)
 library(nlme)
+library(lmerTest)
 
 FST_LLM <- as.data.frame(cbind(pop1 =fst_results_df$pop1,
                                pop2 = fst_results_df$pop2,
