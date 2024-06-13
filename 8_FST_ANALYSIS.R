@@ -280,7 +280,7 @@ results$genomewide_Fst <- ifelse(results$genomewide_Fst <  0, 0, results$genomew
 results$significance <- paste(results$significance,"\n",round(results$genomewide_Fst, 4))
 
 # Create the plot
-ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
+heatmap_regions<- ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
   geom_tile(color = "white") +
   # scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,
   #                      limits = c(min(results$observed_mean_fst), max(results$observed_mean_fst)),
@@ -293,6 +293,13 @@ ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
         plot.title = element_text(hjust = 0.5))
 
 
+unique_results <- results %>%
+  distinct(genomewide_Fst, p_value, ci_lower, ci_upper, .keep_all = TRUE)
+
+unique_results <- unique_results[,2:7]
+
+ggsave(paste0("fst_heatmap_regions_", SAMPLING, ".png"), heatmap_regions, width = 8, height = 6, bg = "white")
+write.csv(unique_results, paste0("Fst_regions_", SAMPLING, ".csv"), row.names = F)
 
 
 
@@ -527,7 +534,7 @@ results$genomewide_Fst <- ifelse(results$genomewide_Fst <  0, 0, results$genomew
 results$significance <- paste(results$significance,"\n",round(results$genomewide_Fst, 4))
 
 # Create the plot
-ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
+heatmap_provinces <- ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
   geom_tile(color = "white") +
   # scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,
   #                      limits = c(min(results$observed_mean_fst), max(results$observed_mean_fst)),
@@ -539,6 +546,14 @@ ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         plot.title = element_text(hjust = 0.5))
 
+
+unique_results <- results %>%
+  distinct(genomewide_Fst, p_value, ci_lower, ci_upper, .keep_all = TRUE)
+
+unique_results <- unique_results[,2:7]
+
+ggsave(paste0("fst_heatmap_provinces_", SAMPLING, ".png"), heatmap_provinces, width = 14, height = 10, bg = "white")
+write.csv(unique_results, paste0("Fst_provinces_", SAMPLING, ".csv"), row.names = F)
 
 
 # #llm (interchangeable with boostrat analysis)
