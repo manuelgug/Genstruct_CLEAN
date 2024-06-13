@@ -2,12 +2,12 @@
 library(dplyr)
 library(ggplot2)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
 
-
+regions <- c("North", "Centre", "South")
 
 #set labels
 if (SAMPLING == 2022){
@@ -216,138 +216,175 @@ FST_LLM <- as.data.frame(cbind(pop1 =fst_results_df$pop1,
 
 FST_LLM$fst <- as.numeric(FST_LLM$fst)
 
-# 
-# ## BOOTSTRAP: NON-PARAMETRIC APPROACH TO LME
-# # Set seed for reproducibility
-# set.seed(123)
-# 
-# # Number of bootstrap iterations
-# n_permutations <- 10000
-# 
-# # Calculate observed mean Fst values for each comparison
-# observed_means <- aggregate(fst ~ comparison, data = FST_LLM, mean)
-# 
-# # Bootstrap procedure
-# perm_means <- replicate(n_permutations, {
-#   perm_data <- FST_LLM
-#   perm_data$comparison <- sample(perm_data$comparison)
-#   perm_agg <- aggregate(fst ~ comparison, data = perm_data, mean)
-#   return(perm_agg$fst)
-# })
-# 
-# # Transpose the results to match the observed means
-# perm_means <- t(perm_means)
-# 
-# # Calculate 95% confidence intervals
-# ci_lower <- apply(perm_means, 2, function(x) quantile(x, probs = 0.025))
-# ci_upper <- apply(perm_means, 2, function(x) quantile(x, probs = 0.975))
-# 
-# # Calculate p-values
-# p_values <- sapply(1:nrow(observed_means), function(i) {
-#   mean(observed_means$fst[i] <= perm_means[i, ])
-# })
-# 
-# # Combine results into a data frame
-# results <- data.frame(
-#   comparison = observed_means$comparison,
-#   observed_mean_fst = observed_means$fst,
-#   p_value = p_values,
-#   ci_lower = ci_lower,   # Adding lower CI
-#   ci_upper = ci_upper    # Adding upper CI
-# )
-# 
-# print(results)
+
+## BOOTSTRAP: NON-PARAMETRIC APPROACH TO LME
+# Set seed for reproducibility
+set.seed(69)
+
+# Number of bootstrap iterations
+n_permutations <- 10000
+
+# Calculate observed mean Fst values for each comparison
+observed_means <- aggregate(fst ~ comparison + pop1 + pop2, data = FST_LLM, mean)
+
+# Bootstrap procedure
+perm_means <- replicate(n_permutations, {
+  perm_data <- FST_LLM
+  perm_data$comparison <- sample(perm_data$comparison)
+  perm_agg <- aggregate(fst ~ comparison, data = FST_LLM, mean)
+  return(perm_agg$fst)
+})
+
+# Transpose the results to match the observed means
+perm_means <- t(perm_means)
+
+# Calculate 95% confidence intervals
+ci_lower <- apply(perm_means, 2, function(x) quantile(x, probs = 0.025))
+ci_upper <- apply(perm_means, 2, function(x) quantile(x, probs = 0.975))
+
+# Calculate p-values
+p_values <- sapply(1:nrow(observed_means), function(i) {
+  mean(observed_means$fst[i] <= perm_means[i, ])
+})
+
+# Combine results into a data frame
+results <- data.frame(
+  comparison = observed_means$comparison,
+  pop1 = observed_means$pop1,
+  pop2 = observed_means$pop2,
+  genomewide_Fst = observed_means$fst,
+  p_value = p_values,
+  ci_lower = ci_lower,   # Adding lower CI
+  ci_upper = ci_upper    # Adding upper CI
+)
+
+print(results)
 
 
-#llm (interchangeable with boostrat analysis)
-library(nlme)
 
-fst.model.region <- lme(fst ~ comparison,
-                        random = ~ 1 | locus,
-                        data = FST_LLM,
-                        na.action = na.omit)
+# # Splitting comparison column into pop1 and pop2
+# results$pop1 <- sub("_.*", "", results$comparison)
+# results$pop2 <- sub(".*_", "", results$comparison)
 
-summary_data <- summary(fst.model.region)
-summary_table <- as.data.frame(summary_data$tTable)
-summary_table <- unique(summary_table)
-summary_table$comparison <-  rownames(summary_table)
+# Convert pop1 and pop2 to factor with desired order
+results$pop1 <- factor(results$pop1, levels = rev(regions))
+results$pop2 <- factor(results$pop2, levels = rev(regions))
 
-#dim(summary_table)
+# Adding significance stars based on p_value
+results$significance <- ifelse(results$p_value < 0.001, "***",
+                               ifelse(results$p_value < 0.01, "**",
+                                      ifelse(results$p_value < 0.05, "*", "")))
 
-cis <- intervals(fst.model.region, which = "fixed")
-cis <- as.data.frame(cis$fixed)
-cis <- unique(cis)
-cis$comparison <-  rownames(cis)
+results$genomewide_Fst <- ifelse(results$genomewide_Fst <  0, 0, results$genomewide_Fst)
 
-#dim(cis)
+results$significance <- paste(results$significance,"\n",round(results$genomewide_Fst, 4))
 
-library(tidyr)
-
-#merge estimates with CIs
-final_table<- merge(cis, summary_table, by = c("comparison"))
-final_table$comparison <- gsub("comparison", "", final_table$comparison)
-final_table <- unique(merge(final_table, FST_LLM[c("pop1", "pop2", "comparison")], by = c("comparison")))
-
-#heatmap
-final_table$Fst_estimate<- round(final_table$est., 3)
-final_table <- complete(final_table, pop1, pop2, fill = list(Fst_estimate = 0, `p-value` = 1))
-final_table$Fst_estimate<- ifelse(final_table$Fst_estimate < 0, 0, final_table$Fst_estimate) #TURN NEGATIVE VALUES TO 0
-final_table$label <- ifelse(final_table$`p-value` < 0.05 & final_table$Fst_estimate > 0 , paste0(final_table$Fst_estimate, "*"), as.character(final_table$Fst_estimate))
-
-regions <- c("North", "Centre", "South") #ordered from north to south
-#regions <- rev(regions)
-
-final_table$pop1 <- factor(final_table$pop1, levels = regions)
-final_table$pop2 <- factor(final_table$pop2, levels = regions)
-
-heatmap_regions <- ggplot(final_table, aes(x = pop2, y = pop1, fill = Fst_estimate, label = label)) +
-  geom_tile() +
-  geom_text(color = "black") +
-  scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(final_table$Fst_estimate), max(final_table$Fst_estimate))) +  # Adjust scale limits
+# Create the plot
+ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
+  geom_tile(color = "white") +
+  # scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,
+  #                      limits = c(min(results$observed_mean_fst), max(results$observed_mean_fst)),
+  #                      name = "Observed Mean Fst") +
+  scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(results$genomewide_Fst), max(results$genomewide_Fst)))+
+  geom_text(aes(label = significance), size = 5, color = "black") +
+  labs(x = "", y = "", title = "") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  labs(x = "", y = "")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
 
-#significance
-final_table$significance <- ifelse(final_table$`p-value` < 0.05, "p < 0.05", "not_signiff.")
 
-final_table <- final_table %>%
-  arrange(`est.`)
 
-#keep fst > 0
-final_table <- final_table[final_table$est. > 0.000001,]
 
-# Create logical index to keep every other row
-keep_rows <- seq(nrow(final_table)) %% 2 == 1
 
-# Subset final_table to keep every other row
-final_table <- final_table[keep_rows, ]
-
-final_table <- final_table %>%
-  mutate(comparison = factor(comparison, levels = comparison[order(est.)]))
-
-final_table <- final_table[-nrow(final_table),]
-
-anovap <- anova(fst.model.region, type = "marginal")
-anovap_for_plot <- paste0("Anova's p = ", round(anovap$`p-value`[2], 3))
-
-fst_regions <- ggplot(na.omit(final_table), aes(x = comparison, y = est., color = significance)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
-  labs(title = "",
-       x = "Pairwise comparisons",
-       y = "Fst Estimate") +
-  scale_color_manual(values = c("black", "red")) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  theme_minimal()+
-  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
-
-#fst_regions
-
-#kw <- kruskal.test(fst ~ comparison, data = fst.model.region$data)
-ggsave(paste0("fst_heatmap_regions_", SAMPLING, ".png"), heatmap_regions, width = 8, height = 6, bg = "white")
-ggsave(paste0("fst_CI_regions_", SAMPLING, ".png"), fst_regions, width = 8, height = 6, bg = "white")
-write.csv(final_table, paste0("Fst_regions_", SAMPLING, ".csv"), row.names = F)
+# #llm (interchangeable with boostrat analysis)
+# library(nlme)
+# 
+# fst.model.region <- lme(fst ~ comparison,
+#                         random = ~ 1 | locus,
+#                         data = FST_LLM,
+#                         na.action = na.omit)
+# 
+# summary_data <- summary(fst.model.region)
+# summary_table <- as.data.frame(summary_data$tTable)
+# summary_table <- unique(summary_table)
+# summary_table$comparison <-  rownames(summary_table)
+# 
+# #dim(summary_table)
+# 
+# cis <- intervals(fst.model.region, which = "fixed")
+# cis <- as.data.frame(cis$fixed)
+# cis <- unique(cis)
+# cis$comparison <-  rownames(cis)
+# 
+# #dim(cis)
+# 
+# library(tidyr)
+# 
+# #merge estimates with CIs
+# final_table<- merge(cis, summary_table, by = c("comparison"))
+# final_table$comparison <- gsub("comparison", "", final_table$comparison)
+# final_table <- unique(merge(final_table, FST_LLM[c("pop1", "pop2", "comparison")], by = c("comparison")))
+# 
+# #heatmap
+# final_table$Fst_estimate<- round(final_table$est., 3)
+# final_table <- complete(final_table, pop1, pop2, fill = list(Fst_estimate = 0, `p-value` = 1))
+# final_table$Fst_estimate<- ifelse(final_table$Fst_estimate < 0, 0, final_table$Fst_estimate) #TURN NEGATIVE VALUES TO 0
+# final_table$label <- ifelse(final_table$`p-value` < 0.05 & final_table$Fst_estimate > 0 , paste0(final_table$Fst_estimate, "*"), as.character(final_table$Fst_estimate))
+# 
+# regions <- c("North", "Centre", "South") #ordered from north to south
+# #regions <- rev(regions)
+# 
+# final_table$pop1 <- factor(final_table$pop1, levels = regions)
+# final_table$pop2 <- factor(final_table$pop2, levels = regions)
+# 
+# heatmap_regions <- ggplot(final_table, aes(x = pop2, y = pop1, fill = Fst_estimate, label = label)) +
+#   geom_tile() +
+#   geom_text(color = "black") +
+#   scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(final_table$Fst_estimate), max(final_table$Fst_estimate))) +  # Adjust scale limits
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+#   labs(x = "", y = "")
+# 
+# #significance
+# final_table$significance <- ifelse(final_table$`p-value` < 0.05, "p < 0.05", "not_signiff.")
+# 
+# final_table <- final_table %>%
+#   arrange(`est.`)
+# 
+# #keep fst > 0
+# final_table <- final_table[final_table$est. > 0.000001,]
+# 
+# # Create logical index to keep every other row
+# keep_rows <- seq(nrow(final_table)) %% 2 == 1
+# 
+# # Subset final_table to keep every other row
+# final_table <- final_table[keep_rows, ]
+# 
+# final_table <- final_table %>%
+#   mutate(comparison = factor(comparison, levels = comparison[order(est.)]))
+# 
+# final_table <- final_table[-nrow(final_table),]
+# 
+# anovap <- anova(fst.model.region, type = "marginal")
+# anovap_for_plot <- paste0("Anova's p = ", round(anovap$`p-value`[2], 3))
+# 
+# fst_regions <- ggplot(na.omit(final_table), aes(x = comparison, y = est., color = significance)) +
+#   geom_point() +
+#   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+#   labs(title = "",
+#        x = "Pairwise comparisons",
+#        y = "Fst Estimate") +
+#   scale_color_manual(values = c("black", "red")) +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+#   theme_minimal()+
+#   annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
+# 
+# #fst_regions
+# 
+# #kw <- kruskal.test(fst ~ comparison, data = fst.model.region$data)
+# ggsave(paste0("fst_heatmap_regions_", SAMPLING, ".png"), heatmap_regions, width = 8, height = 6, bg = "white")
+# ggsave(paste0("fst_CI_regions_", SAMPLING, ".png"), fst_regions, width = 8, height = 6, bg = "white")
+# write.csv(final_table, paste0("Fst_regions_", SAMPLING, ".csv"), row.names = F)
 
 
 
@@ -427,132 +464,166 @@ FST_LLM <- as.data.frame(cbind(pop1 =fst_results_df$pop1,
 FST_LLM$fst <- as.numeric(FST_LLM$fst)
 
 
-# ## BOOTSTRAP: NON-PARAMETRIC APPROACH TO LME
-# # Set seed for reproducibility
-# set.seed(123)
-# 
-# # Number of bootstrap iterations
-# n_permutations <- 10000
-# 
-# # Calculate observed mean Fst values for each comparison
-# observed_means <- aggregate(fst ~ comparison, data = FST_LLM, mean)
-# 
-# # Bootstrap procedure
-# perm_means <- replicate(n_permutations, {
-#   perm_data <- FST_LLM
-#   perm_data$comparison <- sample(perm_data$comparison)
-#   perm_agg <- aggregate(fst ~ comparison, data = perm_data, mean)
-#   return(perm_agg$fst)
-# })
-# 
-# # Transpose the results to match the observed means
-# perm_means <- t(perm_means)
-# 
-# # Calculate 95% confidence intervals
-# ci_lower <- apply(perm_means, 2, function(x) quantile(x, probs = 0.025))
-# ci_upper <- apply(perm_means, 2, function(x) quantile(x, probs = 0.975))
-# 
-# # Calculate p-values
-# p_values <- sapply(1:nrow(observed_means), function(i) {
-#   mean(observed_means$fst[i] <= perm_means[i, ])
-# })
-# 
-# # Combine results into a data frame
-# results <- data.frame(
-#   comparison = observed_means$comparison,
-#   observed_mean_fst = observed_means$fst,
-#   p_value = p_values,
-#   ci_lower = ci_lower,   # Adding lower CI
-#   ci_upper = ci_upper    # Adding upper CI
-# )
-# 
-# print(results)
+## BOOTSTRAP: NON-PARAMETRIC APPROACH TO LME
+# Set seed for reproducibility
+set.seed(69)
+
+# Number of bootstrap iterations
+n_permutations <- 10000
+
+# Calculate observed mean Fst values for each comparison
+observed_means <- aggregate(fst ~ comparison + pop1 + pop2, data = FST_LLM, mean)
+
+# Bootstrap procedure
+perm_means <- replicate(n_permutations, {
+  perm_data <- FST_LLM
+  perm_data$comparison <- sample(perm_data$comparison)
+  perm_agg <- aggregate(fst ~ comparison, data = FST_LLM, mean)
+  return(perm_agg$fst)
+})
+
+# Transpose the results to match the observed means
+perm_means <- t(perm_means)
+
+# Calculate 95% confidence intervals
+ci_lower <- apply(perm_means, 2, function(x) quantile(x, probs = 0.025))
+ci_upper <- apply(perm_means, 2, function(x) quantile(x, probs = 0.975))
+
+# Calculate p-values
+p_values <- sapply(1:nrow(observed_means), function(i) {
+  mean(observed_means$fst[i] <= perm_means[i, ])
+})
+
+# Combine results into a data frame
+results <- data.frame(
+  comparison = observed_means$comparison,
+  pop1 = observed_means$pop1,
+  pop2 = observed_means$pop2,
+  genomewide_Fst = observed_means$fst,
+  p_value = p_values,
+  ci_lower = ci_lower,   # Adding lower CI
+  ci_upper = ci_upper    # Adding upper CI
+)
+
+print(results)
 
 
 
-#llm (interchangeable with boostrat analysis)
-library(nlme)
+# # Splitting comparison column into pop1 and pop2
+# results$pop1 <- sub("_.*", "", results$comparison)
+# results$pop2 <- sub(".*_", "", results$comparison)
 
-fst.model.region <- lme(fst ~ comparison,
-                        random = ~ 1 | locus,
-                        data = FST_LLM,
-                        na.action = na.omit)
+# Convert pop1 and pop2 to factor with desired order
+results$pop1 <- factor(results$pop1, levels = rev(provinces))
+results$pop2 <- factor(results$pop2, levels = rev(provinces))
 
-summary_data <- summary(fst.model.region)
-summary_table <- as.data.frame(summary_data$tTable)
-summary_table <- unique(summary_table)
-summary_table$comparison <-  rownames(summary_table)
+# Adding significance stars based on p_value
+results$significance <- ifelse(results$p_value < 0.001, "***",
+                               ifelse(results$p_value < 0.01, "**",
+                                      ifelse(results$p_value < 0.05, "*", "")))
 
-dim(summary_table)
+results$genomewide_Fst <- ifelse(results$genomewide_Fst <  0, 0, results$genomewide_Fst)
 
-cis <- intervals(fst.model.region, which = "fixed")
-cis <- as.data.frame(cis$fixed)
-cis <- unique(cis)
-cis$comparison <-  rownames(cis)
+results$significance <- paste(results$significance,"\n",round(results$genomewide_Fst, 4))
 
-dim(cis)
-
-#merge estimates with CIs
-final_table<- merge(cis, summary_table, by = c("comparison"))
-final_table$comparison <- gsub("comparison", "", final_table$comparison)
-final_table <- unique(merge(final_table, FST_LLM[c("pop1", "pop2", "comparison")], by = c("comparison")))
-
-#heatmap
-final_table$Fst_estimate<- round(final_table$est., 3)
-final_table <- complete(final_table, pop1, pop2, fill = list(Fst_estimate = 0, `p-value` = 1))
-final_table$Fst_estimate<- ifelse(final_table$Fst_estimate < 0, 0, final_table$Fst_estimate) #TURN NEGATIVE VALUES TO 0
-final_table$label <- ifelse(final_table$`p-value` < 0.05 & final_table$Fst_estimate > 0 , paste0(final_table$Fst_estimate, "*"), as.character(final_table$Fst_estimate))
-
-
-final_table$pop1 <- factor(final_table$pop1, levels = provinces)
-final_table$pop2 <- factor(final_table$pop2, levels = provinces)
-
-heatmap_provinces <- ggplot(final_table, aes(x = pop2, y = pop1, fill = Fst_estimate, label = label)) +
-  geom_tile() +
-  geom_text(color = "black") +
-  scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(final_table$Fst_estimate), max(final_table$Fst_estimate))) +  # Adjust scale limits
+# Create the plot
+ggplot(results, aes(x = pop1, y = pop2, fill = genomewide_Fst)) +
+  geom_tile(color = "white") +
+  # scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,
+  #                      limits = c(min(results$observed_mean_fst), max(results$observed_mean_fst)),
+  #                      name = "Observed Mean Fst") +
+  scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(results$genomewide_Fst), max(results$genomewide_Fst)))+
+  geom_text(aes(label = significance), size = 5, color = "black") +
+  labs(x = "", y = "", title = "") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  labs(x = "", y = "")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
 
-#significance
-final_table$significance <- ifelse(final_table$`p-value` < 0.05, "p < 0.05", "not_signiff.")
 
-final_table <- final_table %>%
-  arrange(`est.`)
 
-#keep fst > 0 
-final_table <- final_table[final_table$est. > 0.000001,]
-
-# Create logical index to keep every other row
-keep_rows <- seq(nrow(final_table)) %% 2 == 1
-
-# Subset final_table to keep every other row
-final_table <- final_table[keep_rows, ]
-
-final_table <- final_table %>%
-  mutate(comparison = factor(comparison, levels = comparison[order(est.)]))
-
-final_table <- final_table[-nrow(final_table),]
-
-anovap <- anova(fst.model.region, type = "marginal")
-anovap_for_plot <- paste0("Anova's p = ", round(anovap$`p-value`[2], 3))
-
-fst_provinces <- ggplot(na.omit(final_table), aes(x = comparison, y = est., color = significance)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
-  labs(title = "",
-       x = "Pairwise comparisons",
-       y = "Fst Estimate") +
-  scale_color_manual(values = c("black", "red")) +
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
-
-#fst_regions
-
-#kw <- kruskal.test(fst ~ comparison, data = fst.model.region$data)
-ggsave(paste0("fst_heatmap_provinces_", SAMPLING, ".png"), heatmap_provinces, width = 8, height = 6, bg = "white")
-ggsave(paste0("fst_CI_provinces_", SAMPLING, ".png"), fst_provinces, width = 8, height = 6, bg = "white")
-write.csv(final_table, paste0("Fst_provinces_", SAMPLING, ".csv"), row.names = F)
+# #llm (interchangeable with boostrat analysis)
+# library(nlme)
+# 
+# fst.model.region <- lme(fst ~ comparison,
+#                         random = ~ 1 | locus,
+#                         data = FST_LLM,
+#                         na.action = na.omit)
+# 
+# summary_data <- summary(fst.model.region)
+# summary_table <- as.data.frame(summary_data$tTable)
+# summary_table <- unique(summary_table)
+# summary_table$comparison <-  rownames(summary_table)
+# 
+# dim(summary_table)
+# 
+# cis <- intervals(fst.model.region, which = "fixed")
+# cis <- as.data.frame(cis$fixed)
+# cis <- unique(cis)
+# cis$comparison <-  rownames(cis)
+# 
+# dim(cis)
+# 
+# #merge estimates with CIs
+# final_table<- merge(cis, summary_table, by = c("comparison"))
+# final_table$comparison <- gsub("comparison", "", final_table$comparison)
+# final_table <- unique(merge(final_table, FST_LLM[c("pop1", "pop2", "comparison")], by = c("comparison")))
+# 
+# #heatmap
+# final_table$Fst_estimate<- round(final_table$est., 3)
+# final_table <- complete(final_table, pop1, pop2, fill = list(Fst_estimate = 0, `p-value` = 1))
+# final_table$Fst_estimate<- ifelse(final_table$Fst_estimate < 0, 0, final_table$Fst_estimate) #TURN NEGATIVE VALUES TO 0
+# final_table$label <- ifelse(final_table$`p-value` < 0.05 & final_table$Fst_estimate > 0 , paste0(final_table$Fst_estimate, "*"), as.character(final_table$Fst_estimate))
+# 
+# 
+# final_table$pop1 <- factor(final_table$pop1, levels = provinces)
+# final_table$pop2 <- factor(final_table$pop2, levels = provinces)
+# 
+# heatmap_provinces <- ggplot(final_table, aes(x = pop2, y = pop1, fill = Fst_estimate, label = label)) +
+#   geom_tile() +
+#   geom_text(color = "black") +
+#   scale_fill_gradient(low = "lightblue1", high = "orange", limits = c(min(final_table$Fst_estimate), max(final_table$Fst_estimate))) +  # Adjust scale limits
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+#   labs(x = "", y = "")
+# 
+# #significance
+# final_table$significance <- ifelse(final_table$`p-value` < 0.05, "p < 0.05", "not_signiff.")
+# 
+# final_table <- final_table %>%
+#   arrange(`est.`)
+# 
+# #keep fst > 0 
+# final_table <- final_table[final_table$est. > 0.000001,]
+# 
+# # Create logical index to keep every other row
+# keep_rows <- seq(nrow(final_table)) %% 2 == 1
+# 
+# # Subset final_table to keep every other row
+# final_table <- final_table[keep_rows, ]
+# 
+# final_table <- final_table %>%
+#   mutate(comparison = factor(comparison, levels = comparison[order(est.)]))
+# 
+# final_table <- final_table[-nrow(final_table),]
+# 
+# anovap <- anova(fst.model.region, type = "marginal")
+# anovap_for_plot <- paste0("Anova's p = ", round(anovap$`p-value`[2], 3))
+# 
+# fst_provinces <- ggplot(na.omit(final_table), aes(x = comparison, y = est., color = significance)) +
+#   geom_point() +
+#   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+#   labs(title = "",
+#        x = "Pairwise comparisons",
+#        y = "Fst Estimate") +
+#   scale_color_manual(values = c("black", "red")) +
+#   theme_minimal()+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+#   annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
+# 
+# #fst_regions
+# 
+# #kw <- kruskal.test(fst ~ comparison, data = fst.model.region$data)
+# ggsave(paste0("fst_heatmap_provinces_", SAMPLING, ".png"), heatmap_provinces, width = 8, height = 6, bg = "white")
+# ggsave(paste0("fst_CI_provinces_", SAMPLING, ".png"), fst_provinces, width = 8, height = 6, bg = "white")
+# write.csv(final_table, paste0("Fst_provinces_", SAMPLING, ".csv"), row.names = F)
 
