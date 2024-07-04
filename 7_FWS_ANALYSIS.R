@@ -209,9 +209,36 @@ if (SAMPLING == 2021){
     #ggtitle("Province Connectivity") +
     labs(x = "Province", y = "Genome-wide 1-Fws") +
     guides(color = FALSE, fill = FALSE) +
-    scale_fill_manual(values = province_colors)+
-    stat_compare_means(comparisons = combos_pairwise_province_fws_province, aes(label = after_stat(p.signif)),
-                       method = "wilcox.test")
+    scale_fill_manual(values = province_colors) #+
+    # stat_compare_means(comparisons = combos_pairwise_province_fws_province, aes(label = after_stat(p.signif)),
+    #                    method = "wilcox.test")
+  
+  
+  # Prepare significance labels
+  signif_p.pairwise_province_fws <- signif_p.pairwise_province_fws %>%
+    mutate(label = case_when(
+      value < 0.001 ~ "***",
+      value < 0.01 ~ "**",
+      value < 0.05 ~ "*",
+      TRUE ~ ""
+    ))
+  signif_p.pairwise_province_fws <- signif_p.pairwise_province_fws[signif_p.pairwise_province_fws$value < 0.05,]
+  
+  
+  # Add significance annotations only for significant results
+  for (i in 1:nrow(signif_p.pairwise_province_fws)) {
+    if (signif_p.pairwise_province_fws$label[i] != "") {
+      prov_fws <- prov_fws + geom_signif(
+        comparisons = list(c(as.character(signif_p.pairwise_province_fws$Var1)[i], as.character(signif_p.pairwise_province_fws$Var2)[i])),
+        annotations = signif_p.pairwise_province_fws$label[i],
+        map_signif_level = TRUE,
+        y_position = max(mean_Fws_per_individual_nodry$mean_indiv_fws_region) + 0.1 * (i + 0.1)
+      )
+    }
+  }
+  
+  prov_fws
+  
   
   ggsave(paste0("province_fws_", SAMPLING,".png"), prov_fws, width = 8, height = 6, bg = "white")
   
@@ -229,9 +256,35 @@ if (SAMPLING == 2021){
     #ggtitle("Province Connectivity") +
     labs(x = "Province", y = "Genome-wide 1-Fws") +
     guides(color = FALSE, fill = FALSE) +
-    scale_fill_manual(values = province_colors)+
-    stat_compare_means(comparisons = combos_pairwise_province_fws_province, aes(label = after_stat(p.signif)),
-                       method = "wilcox.test")
+    scale_fill_manual(values = province_colors) #+
+    # stat_compare_means(comparisons = combos_pairwise_province_fws_province, aes(label = after_stat(p.signif)),
+    #                    method = "wilcox.test")
+  
+  
+  # Prepare significance labels
+  signif_p.pairwise_province_fws <- signif_p.pairwise_province_fws %>%
+    mutate(label = case_when(
+      value < 0.001 ~ "***",
+      value < 0.01 ~ "**",
+      value < 0.05 ~ "*",
+      TRUE ~ ""
+    ))
+  signif_p.pairwise_province_fws <- signif_p.pairwise_province_fws[signif_p.pairwise_province_fws$value < 0.05,]
+  
+  
+  # Add significance annotations only for significant results
+  for (i in 1:nrow(signif_p.pairwise_province_fws)) {
+    if (signif_p.pairwise_province_fws$label[i] != "") {
+      prov_fws <- prov_fws + geom_signif(
+        comparisons = list(c(as.character(signif_p.pairwise_province_fws$Var1)[i], as.character(signif_p.pairwise_province_fws$Var2)[i])),
+        annotations = signif_p.pairwise_province_fws$label[i],
+        map_signif_level = TRUE,
+        y_position = max(mean_Fws_per_individual_nodry$mean_indiv_fws_region) + 0.1 * (i + 0.1)
+      )
+    }
+  }
+  
+  prov_fws
   
   ggsave(paste0("province_fws_", SAMPLING,".png"), prov_fws, width = 8, height = 6, bg = "white")
   
@@ -263,8 +316,32 @@ reg_fws <- ggplot(mean_Fws_per_individual_nodry, aes(x = region, y = mean_indiv_
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
   labs(x = "", y = "Genome-wide 1-Fws") +
-  guides(fill = FALSE, color = FALSE) +
-  stat_compare_means(comparisons = combos_pairwise_region_fws_province, aes(label = after_stat(p.signif)),
-                     method = "wilcox.test")
+  guides(fill = FALSE, color = FALSE) #+
+  #stat_compare_means(comparisons = combos_pairwise_region_fws_province, aes(label = after_stat(p.signif)),
+  #                  method = "wilcox.test")
+
+
+# Prepare significance labels
+signif_p.pairwise_region_fws <- signif_p.pairwise_region_fws %>%
+  mutate(label = case_when(
+    value < 0.001 ~ "***",
+    value < 0.01 ~ "**",
+    value < 0.05 ~ "*",
+    TRUE ~ ""
+  ))
+signif_p.pairwise_region_fws <- signif_p.pairwise_region_fws[signif_p.pairwise_region_fws$value < 0.05,]
+
+
+# Add significance annotations only for significant results
+for (i in 1:nrow(signif_p.pairwise_region_fws)) {
+  if (signif_p.pairwise_region_fws$label[i] != "") {
+    reg_fws <- reg_fws + geom_signif(
+      comparisons = list(c(as.character(signif_p.pairwise_region_fws$Var1)[i], as.character(signif_p.pairwise_region_fws$Var2)[i])),
+      annotations = signif_p.pairwise_region_fws$label[i],
+      map_signif_level = TRUE,
+      y_position = max(mean_Fws_per_individual_nodry$mean_indiv_fws_region) + 0.1 * (i + 0.1)
+    )
+  }
+}
 
 ggsave(paste0("region_fws_", SAMPLING,".png"), reg_fws, width = 8, height = 6, bg = "white")
