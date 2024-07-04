@@ -8,7 +8,7 @@ library(geosphere)
 library(Rtsne)
 library(reshape2)
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -173,9 +173,10 @@ regions <- c("North", "Centre", "South")
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 # # Plot PCoA
-variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
-variance_explained_axis1 <- variance_explained$Eigenvalues[1]
-variance_explained_axis2 <- variance_explained$Eigenvalues[2]
+variance_explained <- round(pcoa_result$values$Eigenvalues / sum(pcoa_result$values$Eigenvalues) * 100, 2)
+variance_explained_axis1 <- variance_explained[1]
+variance_explained_axis2 <- variance_explained[2]
+
 
 # Plot PCoA with variance explained in title
 af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province, shape = VOC_436_581)) +
@@ -209,9 +210,9 @@ pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 
 # # Plot PCoA
-variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
-variance_explained_axis1 <- variance_explained$Eigenvalues[1]
-variance_explained_axis2 <- variance_explained$Eigenvalues[2]
+variance_explained <- round(pcoa_result$values$Eigenvalues / sum(pcoa_result$values$Eigenvalues) * 100, 2)
+variance_explained_axis1 <- variance_explained[1]
+variance_explained_axis2 <- variance_explained[2]
 
 # Plot PCoA with variance explained in title
 pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province, shape = VOC_436_581)) +
@@ -264,9 +265,9 @@ pcs_with_labels$province <- factor(pcs_with_labels$province, levels = provinces)
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 # # Plot PCoA
-variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
-variance_explained_axis1 <- variance_explained$Eigenvalues[1]
-variance_explained_axis2 <- variance_explained$Eigenvalues[2]
+variance_explained <- round(pcoa_result$values$Eigenvalues / sum(pcoa_result$values$Eigenvalues) * 100, 2)
+variance_explained_axis1 <- variance_explained[1]
+variance_explained_axis2 <- variance_explained[2]
 
 #format 436 mutation labels
 pcs_with_labels$VOC_436 <- ifelse(pcs_with_labels$VOC_436_581 == "dhps_436-mix_581-WT" | pcs_with_labels$VOC_436_581 == "dhps_436-mut_581-WT", 
@@ -305,9 +306,9 @@ pcs_with_labels$province <- factor(pcs_with_labels$province, levels = provinces)
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 # # Plot PCoA
-variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
-variance_explained_axis1 <- variance_explained$Eigenvalues[1]
-variance_explained_axis2 <- variance_explained$Eigenvalues[2]
+variance_explained <- round(pcoa_result$values$Eigenvalues / sum(pcoa_result$values$Eigenvalues) * 100, 2)
+variance_explained_axis1 <- variance_explained[1]
+variance_explained_axis2 <- variance_explained[2]
 
 #format 436 mutation labels
 pcs_with_labels$VOC_436 <- ifelse(pcs_with_labels$VOC_436_581 == "dhps_436-mix_581-WT" | pcs_with_labels$VOC_436_581 == "dhps_436-mut_581-WT", 
@@ -350,9 +351,9 @@ pcs_with_labels$province <- factor(pcs_with_labels$province, levels = provinces)
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 # # Plot PCoA
-variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
-variance_explained_axis1 <- variance_explained$Eigenvalues[1]
-variance_explained_axis2 <- variance_explained$Eigenvalues[2]
+variance_explained <- round(pcoa_result$values$Eigenvalues / sum(pcoa_result$values$Eigenvalues) * 100, 2)
+variance_explained_axis1 <- variance_explained[1]
+variance_explained_axis2 <- variance_explained[2]
 
 #format 581 mutations labels
 pcs_with_labels$VOC_581 <- ifelse(pcs_with_labels$VOC_436_581 == "dhps_436-mix_581-WT" | pcs_with_labels$VOC_436_581 == "dhps_436-mut_581-WT", 
@@ -391,9 +392,9 @@ pcs_with_labels$province <- factor(pcs_with_labels$province, levels = provinces)
 pcs_with_labels$region <- factor(pcs_with_labels$region, levels = regions)
 
 # # Plot PCoA
-variance_explained <- round(pcoa_result$values / sum(pcoa_result$values) * 100, 2)
-variance_explained_axis1 <- variance_explained$Eigenvalues[1]
-variance_explained_axis2 <- variance_explained$Eigenvalues[2]
+variance_explained <- round(pcoa_result$values$Eigenvalues / sum(pcoa_result$values$Eigenvalues) * 100, 2)
+variance_explained_axis1 <- variance_explained[1]
+variance_explained_axis2 <- variance_explained[2]
 
 #format 581 mutations labels
 pcs_with_labels$VOC_581 <- ifelse(pcs_with_labels$VOC_436_581 == "dhps_436-mix_581-WT" | pcs_with_labels$VOC_436_581 == "dhps_436-mut_581-WT", 
