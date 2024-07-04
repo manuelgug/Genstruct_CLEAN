@@ -329,3 +329,149 @@ scatter_plot <- ggplot(coi_for_db, aes(x = naive_coi, y = post_effective_coi_med
 
 ggsave(paste0("scatter_plot_",SAMPLING,".png"), scatter_plot, width = 8, height = 5, bg = "white")
 
+
+
+
+
+library(tidyr)
+library(purrr)
+library(binom)
+
+### POLYCLONAL infections REGIONS
+
+# Preparing data
+coi_results_region <- coi_results_region %>%
+  mutate(polyclonal = ifelse(post_effective_coi_med > 1.1, 1, 0))
+
+# Function to perform pairwise Fisher's Exact Test
+pairwise_fisher_test <- function(data, region1, region2) {
+  data1 <- data %>% filter(region == region1)
+  data2 <- data %>% filter(region == region2)
+  
+  table <- matrix(c(
+    sum(data1$polyclonal), nrow(data1) - sum(data1$polyclonal),
+    sum(data2$polyclonal), nrow(data2) - sum(data2$polyclonal)
+  ), nrow = 2, byrow = TRUE)
+  
+  fisher.test(table)$p.value
+}
+
+# Unique regions
+regions <- unique(as.character(coi_results_region$region))
+
+# Generate all pairs of regions
+region_pairs <- combn(regions, 2, simplify = FALSE)
+
+# Pairwise comparisons
+pairwise_results <- tibble(
+  region1 = sapply(region_pairs, `[[`, 1),
+  region2 = sapply(region_pairs, `[[`, 2),
+  p.value = map2_dbl(sapply(region_pairs, `[[`, 1), sapply(region_pairs, `[[`, 2), 
+                     ~pairwise_fisher_test(coi_results_region, .x, .y))
+)
+
+# Adjust for multiple comparisons (e.g., Bonferroni correction)
+pairwise_results <- pairwise_results %>%
+  mutate(p.adjusted = p.adjust(p.value, method = "bonferroni"))
+
+pairwise_results
+
+
+# Calculate proportion of polyclonal infections and confidence intervals
+summary_data <- coi_results_region %>%
+  mutate(polyclonal = ifelse(post_effective_coi_med > 1.1, 1, 0)) %>%
+  group_by(region) %>%
+  summarise(
+    n = n(),
+    n_poly = sum(polyclonal),
+    prop_poly = mean(polyclonal)
+  ) %>%
+  mutate(
+    ci_lower = binom.confint(n_poly, n, method = "wilson")$lower,
+    ci_upper = binom.confint(n_poly, n, method = "wilson")$upper
+  )
+
+summary_data
+summary_data$region <- factor(summary_data$region, levels = rev(regions))
+
+
+ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, position = position_dodge(width = 0.9)) +
+  labs(title = "",
+       x = "",
+       y = "Proportion of Polyclonal Infections",
+       fill = "Region") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  guides(fill = FALSE) 
+  
+
+### POLYCLONAL infections PROVINCES
+
+# Preparing data
+coi_results <- coi_results %>%
+  mutate(polyclonal = ifelse(post_effective_coi_med > 1.1, 1, 0))
+
+# Function to perform pairwise Fisher's Exact Test
+pairwise_fisher_test <- function(data, region1, region2) {
+  data1 <- data %>% filter(region == region1)
+  data2 <- data %>% filter(region == region2)
+  
+  table <- matrix(c(
+    sum(data1$polyclonal), nrow(data1) - sum(data1$polyclonal),
+    sum(data2$polyclonal), nrow(data2) - sum(data2$polyclonal)
+  ), nrow = 2, byrow = TRUE)
+  
+  fisher.test(table)$p.value
+}
+
+# Unique regions
+regions <- unique(as.character(coi_results$province))
+
+# Generate all pairs of regions
+region_pairs <- combn(regions, 2, simplify = FALSE)
+
+# Pairwise comparisons
+pairwise_results <- tibble(
+  region1 = sapply(region_pairs, `[[`, 1),
+  region2 = sapply(region_pairs, `[[`, 2),
+  p.value = map2_dbl(sapply(region_pairs, `[[`, 1), sapply(region_pairs, `[[`, 2), 
+                     ~pairwise_fisher_test(coi_results, .x, .y))
+)
+
+# Adjust for multiple comparisons (e.g., Bonferroni correction)
+pairwise_results <- pairwise_results %>%
+  mutate(p.adjusted = p.adjust(p.value, method = "bonferroni"))
+
+pairwise_results
+
+# Calculate proportion of polyclonal infections and confidence intervals
+summary_data <- coi_results %>%
+  mutate(polyclonal = ifelse(post_effective_coi_med > 1.1, 1, 0)) %>%
+  group_by(province) %>%
+  summarise(
+    n = n(),
+    n_poly = sum(polyclonal),
+    prop_poly = mean(polyclonal)
+  ) %>%
+  mutate(
+    ci_lower = binom.confint(n_poly, n, method = "wilson")$lower,
+    ci_upper = binom.confint(n_poly, n, method = "wilson")$upper
+  )
+
+summary_data
+summary_data$province <- factor(summary_data$province, levels = provinces)
+
+ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, position = position_dodge(width = 0.9)) +
+  labs(title = "",
+       x = "",
+       y = "Proportion of Polyclonal Infections",
+       fill = "Region") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  guides(fill = FALSE) +
+  scale_fill_manual(values = province_colors)
+
