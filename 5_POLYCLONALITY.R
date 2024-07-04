@@ -4,7 +4,7 @@ library(ggplot2)
 library(reshape2)
 library(ggpubr)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 ####################################################
 
@@ -336,6 +336,7 @@ ggsave(paste0("scatter_plot_",SAMPLING,".png"), scatter_plot, width = 8, height 
 library(tidyr)
 library(purrr)
 library(binom)
+library(ggsignif)
 
 ### POLYCLONAL infections REGIONS
 
@@ -392,10 +393,10 @@ summary_data <- coi_results_region %>%
   )
 
 summary_data
-summary_data$region <- factor(summary_data$region, levels = rev(regions))
+summary_data$region <- factor(summary_data$region, levels = c("North", "Centre", "South"))
 
 
-ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
+p<- ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, position = position_dodge(width = 0.9)) +
   labs(title = "",
@@ -407,6 +408,27 @@ ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
   guides(fill = FALSE) 
   
 
+# Prepare significance labels
+pairwise_results$label <- ifelse(pairwise_results$p.adjusted < 0.05, "*", "")
+pairwise_results <- pairwise_results[pairwise_results$p.adjusted < 0.05,]
+
+# Add significance annotations only for significant results
+for (i in 1:nrow(pairwise_results)) {
+  if (pairwise_results$label[i] != "") {
+    p <- p + geom_signif(
+      comparisons = list(c(pairwise_results$region1[i], pairwise_results$region2[i])),
+      annotations = pairwise_results$label[i],
+      map_signif_level = TRUE,
+      y_position = max(summary_data$prop_poly) + 0.05 * (i + 1)
+    )
+  }
+}
+
+p
+
+
+
+
 ### POLYCLONAL infections PROVINCES
 
 # Preparing data
@@ -415,8 +437,8 @@ coi_results <- coi_results %>%
 
 # Function to perform pairwise Fisher's Exact Test
 pairwise_fisher_test <- function(data, region1, region2) {
-  data1 <- data %>% filter(region == region1)
-  data2 <- data %>% filter(region == region2)
+  data1 <- data %>% filter(province == region1)
+  data2 <- data %>% filter(province == region2)
   
   table <- matrix(c(
     sum(data1$polyclonal), nrow(data1) - sum(data1$polyclonal),
@@ -463,7 +485,8 @@ summary_data <- coi_results %>%
 summary_data
 summary_data$province <- factor(summary_data$province, levels = provinces)
 
-ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
+
+p<- ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, position = position_dodge(width = 0.9)) +
   labs(title = "",
@@ -475,3 +498,21 @@ ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
   guides(fill = FALSE) +
   scale_fill_manual(values = province_colors)
 
+
+# Prepare significance labels
+pairwise_results$label <- ifelse(pairwise_results$p.adjusted < 0.05, "*", "")
+pairwise_results <- pairwise_results[pairwise_results$p.adjusted < 0.05,]
+
+# Add significance annotations only for significant results
+for (i in 1:nrow(pairwise_results)) {
+  if (pairwise_results$label[i] != "") {
+    p <- p + geom_signif(
+      comparisons = list(c(pairwise_results$region1[i], pairwise_results$region2[i])),
+      annotations = pairwise_results$label[i],
+      map_signif_level = TRUE,
+      y_position = max(summary_data$prop_poly) + 0.05 * (i + 1)
+    )
+  }
+}
+
+p
