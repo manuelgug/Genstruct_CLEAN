@@ -232,11 +232,38 @@ c1 <- ggplot(coi_results, aes(x = province, y = post_effective_coi_med, fill = p
   scale_fill_discrete(name = "Region") +
   labs(x = "", y = "eCOI") +
   guides(color = FALSE, fill = FALSE) +
-  scale_fill_manual(values = province_colors)+
-  stat_compare_means(comparisons = pairwise_province_combinations, aes(label = after_stat(p.signif)),
-                     method = "wilcox.test")
+  scale_fill_manual(values = province_colors) #+
+  #stat_compare_means(comparisons = pairwise_province_combinations, aes(label = after_stat(p.signif)),
+  #                   method = "wilcox.test")
 
-ggsave(paste0("ecoi_provinces_violin_", SAMPLING,".png"), c1, width = 8, height = 6, bg = "white")
+#############################3
+# Prepare significance labels
+signif_p.pairwise_province_ecoi <- signif_p.pairwise_province_ecoi %>%
+  mutate(label = case_when(
+    value < 0.001 ~ "***",
+    value < 0.01 ~ "**",
+    value < 0.05 ~ "*",
+    TRUE ~ ""
+  ))
+
+signif_p.pairwise_province_ecoi <- signif_p.pairwise_province_ecoi[signif_p.pairwise_province_ecoi$value < 0.05,]
+
+# Add significance annotations only for significant results
+for (i in 1:nrow(signif_p.pairwise_province_ecoi)) {
+  if (signif_p.pairwise_province_ecoi$label[i] != "") {
+    c1 <- c1 + geom_signif(
+      comparisons = list(c(as.character(signif_p.pairwise_province_ecoi$Var1)[i], as.character(signif_p.pairwise_province_ecoi$Var2)[i])),
+      annotations = signif_p.pairwise_province_ecoi$label[i],
+      map_signif_level = TRUE,
+      y_position = max(coi_results$post_effective_coi_med) + 1 * (i + 1)
+    )
+  }
+}
+
+#############################3
+
+
+ggsave(paste0("ecoi_provinces_violin_", SAMPLING,".png"), c1, width = 8, height = 7, bg = "white")
 
 
 # d <- ggplot(coi_results_region, aes(x = post_effective_coi_med, fill = region)) +
@@ -277,40 +304,67 @@ d1 <- ggplot(coi_results_region, aes(x = region, y = post_effective_coi_med, fil
   ) +
   scale_fill_discrete(name = "Region") +
   labs(x = "", y = "eCOI") +
-  guides(color = FALSE) +
-  stat_compare_means(comparisons = pairwise_region_combinations, aes(label = after_stat(p.signif)),
-                     method = "wilcox.test")
+  guides(color = FALSE, fill = FALSE) #+
+  #stat_compare_means(comparisons = pairwise_region_combinations, aes(label = after_stat(p.signif)),
+  #                   method = "wilcox.test")
 
-ggsave(paste0("ecoi_coi_pregions_violin_", SAMPLING,".png"), d1, width = 8, height = 6, bg = "white")
+#############################3
+# Prepare significance labels
+signif_p.pairwise_region_ecoi <- signif_p.pairwise_region_ecoi %>%
+  mutate(label = case_when(
+    value < 0.001 ~ "***",
+    value < 0.01 ~ "**",
+    value < 0.05 ~ "*",
+    TRUE ~ ""
+  ))
+
+signif_p.pairwise_region_ecoi <- signif_p.pairwise_region_ecoi[signif_p.pairwise_region_ecoi$value < 0.05,]
+
+# Add significance annotations only for significant results
+for (i in 1:nrow(signif_p.pairwise_region_ecoi)) {
+  if (signif_p.pairwise_region_ecoi$label[i] != "") {
+    d1 <- d1 + geom_signif(
+      comparisons = list(c(as.character(signif_p.pairwise_region_ecoi$Var1)[i], as.character(signif_p.pairwise_region_ecoi$Var2)[i])),
+      annotations = signif_p.pairwise_region_ecoi$label[i],
+      map_signif_level = TRUE,
+      y_position = max(coi_results$post_effective_coi_med) + 1 * (i + 1)
+    )
+  }
+}
+
+d1
+#############################3
+
+ggsave(paste0("ecoi_coi_pregions_violin_", SAMPLING,".png"), d1, width = 8, height = 7, bg = "white")
 
 
-## %POLYCLONAL
-
-##polyclonal percentage
-e <- ggplot(polyclonal_percentage_region, aes(x = region, y = polyclonal_percentage_region, fill = region)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(x = "", y = "% Polyclonal Infections") +
-  #facet_wrap(~region, scales = "fixed", ncol = 3) +
-  #scale_fill_manual(values = c("2022" = "orange")) + 
-  theme_minimal()+
-  guides(fill = FALSE) 
-
-ggsave(paste0("perc_polyclonal_regions_", SAMPLING, ".png"), e, width = 6, height = 4, bg = "white")
-
-
-polyclonal_percentage_province <- merge(polyclonal_percentage_province, unique(coi_results[c("province", "region")]), by="province")
-
-f <- ggplot(polyclonal_percentage_province, aes(x = province, y = polyclonal_percentage_province,  fill = province))+
-  geom_bar(stat = "identity", position = "dodge", alpha = 0.7) +
-  labs(x = "", y = "%Polyclonal Infections") +
-  #facet_wrap(~province, scales = "fixed", nrow = 1) +
-  #scale_fill_manual(values = c("2022" = "orange")) + 
-  theme_minimal()+
-  scale_fill_manual(values = province_colors)+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  guides(fill = FALSE) 
-
-ggsave(paste0("perc_polyclonal_provinces_", SAMPLING, ".png"), f, width = 8, height = 6, bg = "white")
+# ## %POLYCLONAL
+# 
+# ##polyclonal percentage
+# e <- ggplot(polyclonal_percentage_region, aes(x = region, y = polyclonal_percentage_region, fill = region)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   labs(x = "", y = "% Polyclonal Infections") +
+#   #facet_wrap(~region, scales = "fixed", ncol = 3) +
+#   #scale_fill_manual(values = c("2022" = "orange")) + 
+#   theme_minimal()+
+#   guides(fill = FALSE) 
+# 
+# ggsave(paste0("perc_polyclonal_regions_", SAMPLING, ".png"), e, width = 6, height = 4, bg = "white")
+# 
+# 
+# polyclonal_percentage_province <- merge(polyclonal_percentage_province, unique(coi_results[c("province", "region")]), by="province")
+# 
+# f <- ggplot(polyclonal_percentage_province, aes(x = province, y = polyclonal_percentage_province,  fill = province))+
+#   geom_bar(stat = "identity", position = "dodge", alpha = 0.7) +
+#   labs(x = "", y = "%Polyclonal Infections") +
+#   #facet_wrap(~province, scales = "fixed", nrow = 1) +
+#   #scale_fill_manual(values = c("2022" = "orange")) + 
+#   theme_minimal()+
+#   scale_fill_manual(values = province_colors)+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+#   guides(fill = FALSE) 
+# 
+# ggsave(paste0("perc_polyclonal_provinces_", SAMPLING, ".png"), f, width = 8, height = 6, bg = "white")
 
 
 ###
@@ -327,7 +381,7 @@ scatter_plot <- ggplot(coi_for_db, aes(x = naive_coi, y = post_effective_coi_med
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(paste0("scatter_plot_",SAMPLING,".png"), scatter_plot, width = 8, height = 5, bg = "white")
+ggsave(paste0("scatter_plot_",SAMPLING,".png"), scatter_plot, width = 8, height = 6, bg = "white")
 
 
 
@@ -396,7 +450,7 @@ summary_data
 summary_data$region <- factor(summary_data$region, levels = c("North", "Centre", "South"))
 
 
-p<- ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
+e<- ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, position = position_dodge(width = 0.9)) +
   labs(title = "",
@@ -409,13 +463,19 @@ p<- ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
   
 
 # Prepare significance labels
-pairwise_results$label <- ifelse(pairwise_results$p.adjusted < 0.05, "*", "")
+pairwise_results <- pairwise_results %>%
+  mutate(label = case_when(
+    p.adjusted < 0.001 ~ "***",
+    p.adjusted < 0.01 ~ "**",
+    p.adjusted < 0.05 ~ "*",
+    TRUE ~ ""
+  ))
 pairwise_results <- pairwise_results[pairwise_results$p.adjusted < 0.05,]
 
 # Add significance annotations only for significant results
 for (i in 1:nrow(pairwise_results)) {
   if (pairwise_results$label[i] != "") {
-    p <- p + geom_signif(
+    e <- e + geom_signif(
       comparisons = list(c(pairwise_results$region1[i], pairwise_results$region2[i])),
       annotations = pairwise_results$label[i],
       map_signif_level = TRUE,
@@ -424,7 +484,7 @@ for (i in 1:nrow(pairwise_results)) {
   }
 }
 
-p
+ggsave(paste0("perc_polyclonal_regions_", SAMPLING, ".png"), e, width = 6, height = 5, bg = "white")
 
 
 
@@ -486,7 +546,7 @@ summary_data
 summary_data$province <- factor(summary_data$province, levels = provinces)
 
 
-p<- ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
+f<- ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9), width = 0.7) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, position = position_dodge(width = 0.9)) +
   labs(title = "",
@@ -500,13 +560,20 @@ p<- ggplot(summary_data, aes(x = province, y = prop_poly, fill = province)) +
 
 
 # Prepare significance labels
-pairwise_results$label <- ifelse(pairwise_results$p.adjusted < 0.05, "*", "")
+pairwise_results <- pairwise_results %>%
+  mutate(label = case_when(
+    p.adjusted < 0.001 ~ "***",
+    p.adjusted < 0.01 ~ "**",
+    p.adjusted < 0.05 ~ "*",
+    TRUE ~ ""
+  ))
 pairwise_results <- pairwise_results[pairwise_results$p.adjusted < 0.05,]
+
 
 # Add significance annotations only for significant results
 for (i in 1:nrow(pairwise_results)) {
   if (pairwise_results$label[i] != "") {
-    p <- p + geom_signif(
+    f <- f + geom_signif(
       comparisons = list(c(pairwise_results$region1[i], pairwise_results$region2[i])),
       annotations = pairwise_results$label[i],
       map_signif_level = TRUE,
@@ -515,4 +582,5 @@ for (i in 1:nrow(pairwise_results)) {
   }
 }
 
-p
+ggsave(paste0("perc_polyclonal_provinces_", SAMPLING, ".png"), f, width = 8, height = 6.5, bg = "white")
+
