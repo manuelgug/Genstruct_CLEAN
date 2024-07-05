@@ -11,7 +11,7 @@ library(RColorBrewer)
 
 ######################################################
 
-SAMPLING <- 2022 # 2021 or 2022
+SAMPLING <- 2021 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 
@@ -90,6 +90,9 @@ legend(x = max_samples/1.15, y = max_richness/3.7, legend = names(accum_curves_s
 dev.off()
 #conclusion....
 
+
+
+
 combined_df_merged_region <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove DRY season pops from region analysis
 
 # REGION
@@ -141,7 +144,9 @@ for (region in unique_provinces) {
 }
 
 # Select 3 colors from the Paired palette
-colors <- brewer.pal(3, "Paired")
+#colors <- brewer.pal(6, "Paired") # #1f78b4 = azul; #33a02c = verde; #e31a1c = rojo
+
+colors <- c("#1f78b4", "#33a02c", "#e31a1c")
 
 pdf(paste0("accumulation_curves_regions_", SAMPLING, ".pdf"), width = 12, height = 8)
 
