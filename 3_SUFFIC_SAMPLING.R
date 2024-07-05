@@ -11,7 +11,7 @@ library(RColorBrewer)
 
 ######################################################
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 
@@ -146,7 +146,7 @@ for (region in unique_provinces) {
 # Select 3 colors from the Paired palette
 #colors <- brewer.pal(6, "Paired") # #1f78b4 = azul; #33a02c = verde; #e31a1c = rojo
 
-colors <- c("#1f78b4", "#33a02c", "#e31a1c")
+colors <- c( "#e31a1c", "#33a02c", "#1f78b4")
 
 pdf(paste0("accumulation_curves_regions_", SAMPLING, ".pdf"), width = 12, height = 8)
 
@@ -157,11 +157,11 @@ max_richness <- max(sapply(accum_curves_sub_SAMPLING, function(x) max(x$richness
 max_richness<- round(max_richness+(max_richness*0.05),0)
 
 # Plot the curves for SAMPLING
-plot(accum_curves_sub_SAMPLING[[1]], col = colors[1], xlab = "Samples", ylab ="Alleles", main = "Allele Accumulation Curves per Region", xlim = c(0,max_samples), ylim = c(0,max_richness))
+plot(accum_curves_sub_SAMPLING[[1]], col = colors[1], xlab = "Samples", ylab ="Alleles", main = "Allele Accumulation Curves per Region", xlim = c(0,350), ylim = c(0,2500))
 for (i in 2:length(accum_curves_sub_SAMPLING)) {
   lines(accum_curves_sub_SAMPLING[[i]], col = colors[i], lw = 1.5)
 }
-legend(x = max_samples/1.1, y = max_richness/4, legend = names(accum_curves_sub_SAMPLING), fill = colors, x.intersp = 0.7, y.intersp = 0.7)
+legend(x = 350/1.1, y = 2500/4, legend = names(accum_curves_sub_SAMPLING), fill = colors, x.intersp = 0.7, y.intersp = 0.7)
 
 dev.off()
 
