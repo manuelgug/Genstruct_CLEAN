@@ -51,4 +51,4 @@ resmarkers_by_variant$post_allele_freqs_med <- ifelse(resmarkers_by_variant$post
 resmarkers_by_variant$post_allele_freqs_lower <- ifelse(resmarkers_by_variant$post_allele_freqs_lower > 1, 1, resmarkers_by_variant$post_allele_freqs_lower)
 
 
-write.csv(resmarkers_by_variant, "ALLELE_FREQS_res_2021_2022_incluresdry_FORMATTED.csv", row.names= F)
+write.csv(resmarkers_by_variant, "ALLELE_FREQS_RES-F_2021_2022_incluresdry.csv", row.names= F)
