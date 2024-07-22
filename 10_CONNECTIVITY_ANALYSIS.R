@@ -5,7 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(reshape2)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -289,7 +289,7 @@ sample_size_regions
 #calculate percentages for provinces
 ibd_samples_provinces <- sorted_df %>%
   group_by(paste0(province_s1, "_", province_s2)) %>%
-  summarize(ibd_samples = length(unique(c(sample1, sample2))),
+  summarize(ibd_samples = length(unique(paste0(sample1, sample2))),
             province_s1 = province_s1,
             province_s2 = province_s2) %>%
   distinct()
@@ -302,9 +302,11 @@ colnames(ibd_samples_provinces)[4] <- "province_s1_ss"
 ibd_samples_provinces <- merge(ibd_samples_provinces, sample_size_provinces, by.x = "province_s2", by.y = "province")
 colnames(ibd_samples_provinces)[5] <- "province_s2_ss"
 
-ibd_samples_provinces$total_samples_pairwise <- ifelse(ibd_samples_provinces$province_s1 != ibd_samples_provinces$province_s2, rowSums(ibd_samples_provinces[c("province_s1_ss", "province_s2_ss")]), ibd_samples_provinces$province_s1_ss)
+# ibd_samples_provinces$total_samples_pairwise <- ifelse(ibd_samples_provinces$province_s1 != ibd_samples_provinces$province_s2, rowSums(ibd_samples_provinces[c("province_s1_ss", "province_s2_ss")]), ibd_samples_provinces$province_s1_ss)
 
-ibd_samples_provinces$perc_ibd_samples_pairwise <- ibd_samples_provinces$ibd_samples / ibd_samples_provinces$total_samples_pairwise
+ibd_samples_provinces$total_comparisons <- ibd_samples_provinces$province_s1_ss * ibd_samples_provinces$province_s2_ss
+
+ibd_samples_provinces$perc_ibd_samples_pairwise <- ibd_samples_provinces$ibd_samples / ibd_samples_provinces$total_comparisons
 
 ibd_samples_provinces$pairwise_comparison <- paste0(ibd_samples_provinces$province_s1, "_", ibd_samples_provinces$province_s2)
 
@@ -338,7 +340,7 @@ ggsave(paste0("prov_prop_IBD_samples_", SAMPLING, ".png"), prop_ibd_prov, width 
 #calculate percentages for regions
 ibd_samples_regions <- sorted_df %>%
   group_by(paste0(region_s1, "_", region_s2)) %>%
-  summarize(ibd_samples = length(unique(c(sample1, sample2))),
+  summarize(ibd_samples = length(unique(paste(sample1, sample2))),
             region_s1 = region_s1,
             region_s2 = region_s2) %>%
   distinct()
