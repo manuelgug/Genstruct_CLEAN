@@ -189,11 +189,13 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
   theme(
     legend.position = "bottom", 
     legend.box = "vertical",  
-    legend.title = element_text(size = 12),
-    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15),
+    legend.text = element_text(size = 15),
     legend.byrow = TRUE,  # Place legends by row
-    axis.title.x = element_text(size = 14),  # Increase x-axis label size
-    axis.title.y = element_text(size = 14)) +  # Increase y-axis label size
+    axis.title.x = element_text(size = 20),  # Increase x-axis label size
+    axis.title.y = element_text(size = 20),
+    axis.text.x = element_text(colour = "black", size = 15), 
+    axis.text.y = element_text(size = 15, colour = "black")) +  # Increase y-axis label size
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
   scale_shape_manual(values = shapes)
@@ -236,22 +238,24 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
     legend.title = element_text(size = 15),
     legend.text = element_text(size = 15),
     legend.byrow = F,  # Place legends by row
-    axis.title.x = element_text(size = 14),  # Increase x-axis label size
-    axis.title.y = element_text(size = 14)   # Increase y-axis label size
+    axis.title.x = element_text(size = 20),  # Increase x-axis label size
+    axis.title.y = element_text(size = 20),
+    axis.text.x = element_text(colour = "black", size = 15), 
+    axis.text.y = element_text(size = 15, colour = "black")
   ) +
   scale_color_manual(values = province_colors)+
   scale_shape_manual(values = shapes)+
   guides(
     color = guide_legend(ncol = 3),  # Arrange color legend in 3 columns
     shape = guide_legend(ncol = 3)   # Arrange shape legend in 3 columns
-  )
+  )#+guides(fill = FALSE, color = FALSE, shape = FALSE)
 
 pa_pcoa
 
 
 combined_plot_pcoa <- plot_grid(af_pcoa, pa_pcoa, ncol = 2)
 
-ggsave(paste0("PCoA_regions_", SAMPLING, ".png"), combined_plot_pcoa, width = 16, height = 10, bg = "white")
+ggsave(paste0("PCoA_regions_", SAMPLING, "_revised.png"), combined_plot_pcoa, width = 16, height = 10, bg = "white")
 
 
 
@@ -656,17 +660,19 @@ perform_mantel_test <- function(distance, geo_dist) {
   
   # Create scatter plot
   plot <- ggplot(mat, aes(y = deest, x = geo / 1000)) + 
-    geom_point(size = 4, alpha = 0.75, colour = "black", shape = 21, aes(fill = geo / 1000)) + 
+    geom_point(size = 10, alpha = 0.75, colour = "black", shape = 21, aes(fill = geo / 1000)) + 
     geom_smooth(method = "lm", colour = "black", alpha = 0.2) + 
     labs(x = "Harvesine Distance (Km)", y = "Bray-Curtis Dissimilarity", fill = "Kilometers") + 
-    theme(axis.text.x = element_text(colour = "black", size = 12), 
-          axis.text.y = element_text(size = 11, colour = "black"), 
+    theme(axis.text.x = element_text(colour = "black", size = 15), 
+          axis.text.y = element_text(size = 15, colour = "black"), 
           axis.title = element_text(size = 14, colour = "black"), 
           panel.background = element_blank(), 
           panel.border = element_rect(fill = NA, colour = "black"),
           legend.position = "right",
           legend.text = element_text(size = 10),
-          legend.title = element_text(size = 11))+ #+ scale_fill_continuous(high = "navy", low = "skyblue")
+          legend.title = element_text(size = 11),
+          axis.title.x = element_text(size = 20),  # Increase x-axis label size
+          axis.title.y = element_text(size = 20))+   # Increase y-axis label size)+ #+ scale_fill_continuous(high = "navy", low = "skyblue")
     guides(fill="none")
     
   # Return Mantel test result and the scatter plot
@@ -678,13 +684,16 @@ res <- perform_mantel_test(bray_curtis_dist, geo_dist)
 # perform_mantel_test(euclidean_dist, geo_dist)
 # perform_mantel_test(gower_dist, geo_dist)
 
+res
+
 p <- res$plot
 
 pval <- round(res$mantel_result$signif, 3)
 mantelsR <- round(res$mantel_result$statistic,3)
 
-p <- p + 
-  annotate("text", x = Inf, y = -Inf, label = paste("Mantel's R:", mantelsR, "\n", "p-value:", pval), 
-           hjust = 1.1, vjust = -0.5, size = 5, color = "black")
+# p <- p + 
+#   annotate("text", x = Inf, y = -Inf, label = paste("Mantel's R:", mantelsR, "\n", "p-value:", pval), 
+#            hjust = 1.1, vjust = -0.5, size = 5, color = "black")
 
-ggsave(paste0("mantel_pop_allele_Freqs", SAMPLING,"_revised.png"), p, width = 8, height = 6, bg = "white")
+ggsave(paste0("mantel_pop_allele_Freqs", SAMPLING,"_revised.png"), p, width = 10, height = 8, bg = "white")
+
