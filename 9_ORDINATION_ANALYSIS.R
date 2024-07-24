@@ -573,18 +573,67 @@ bray_curtis_dist <- vegdist(rearranged_processed_allele_freq_results_province_no
 # euclidean_dist <- vegdist(rearranged_processed_allele_freq_results_province_nodry, method = "euclidean", diag = T, upper = T)
 # gower_dist <- vegdist(rearranged_processed_allele_freq_results_province_nodry, method = "gower", diag = T, upper = T)
 
-# not actual coordinates??
-coordinates <- data.frame(
-  longitude = c(36.4931, 39.6123, 38.3473, 36.8663, 33.5867, 33.898, 33.898, 34.8444, 35.3837, 32.5716, 32.5716),
-  latitude = c(-12.8779, -11.6455, -15.1056, -16.2828, -16.1742, -19.0834, -19.0834, -19.1548, -23.865, -25.9692, -25.9692)
-)
 
-rownames(coordinates) <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Manica", "Sofala", "Inhambane", "Maputo_Rainy", "Maputo")
 
-coordinates<- coordinates[rownames(coordinates) %in% provinces, ]
+###### Coordinates from Arnau's excel############
+
+library(readxl)
+
+HFS_coord <- read_excel("GEN_MOZ_Health_Facilities.xlsx", sheet = "HFS")
+HFS_coord <- HFS_coord[,c(-7, -8)]
+HFS_coord <- HFS_coord[complete.cases(HFS_coord),]
+
+HFS_coord$Province <- gsub("Manica" , "Manica_Rainy", HFS_coord$Province)
+HFS_coord$Province <- gsub("Maputo" , "Maputo_Rainy", HFS_coord$Province)
+
+
+HFS_coord_mean <- HFS_coord %>%
+  group_by(Province) %>%
+  summarise(
+    longitude = mean(longitude, na.rm = TRUE),
+    latitude = mean(latitude, na.rm = TRUE)
+  )
+
+#tete and cabo delgado are not in the excel. i'll use an average of the districts recorded in db for each:
+cabo_delgado_districts <- unique(db[db$province == "Cabo Delgado",]$district) #only montepuez
+longitude_cabo <- 38.99972
+latitude_cabo <- -13.12556
+
+tete_districts <- unique(db[db$province == "Tete",]$district) # only moatize
+longitude_tete <- 33.72944
+latitude_tete <- -16.11528
+
+#merge coordinates
+cabo_coords<- c("Cabo_Delgado", longitude_cabo, latitude_cabo)
+tete_coords<- c("Tete", longitude_tete, latitude_tete)
+
+HFS_coord_mean <- rbind(HFS_coord_mean, cabo_coords, tete_coords)
+
+HFS_coord_mean<- as.data.frame(HFS_coord_mean)
+
+rownames(HFS_coord_mean)<- HFS_coord_mean$Province
+
+HFS_coord_mean$longitude <- as.numeric(HFS_coord_mean$longitude)
+HFS_coord_mean$latitude <- as.numeric(HFS_coord_mean$latitude)
+
+HFS_coord_mean <- HFS_coord_mean %>%
+  slice(match(provinces, Province))
+
+HFS_coord_mean <- HFS_coord_mean[,-1]
+#################################################
+
+# # not actual coordinates??
+# coordinates <- data.frame(
+#   longitude = c(36.4931, 39.6123, 38.3473, 36.8663, 33.5867, 33.898, 33.898, 34.8444, 35.3837, 32.5716, 32.5716),
+#   latitude = c(-12.8779, -11.6455, -15.1056, -16.2828, -16.1742, -19.0834, -19.0834, -19.1548, -23.865, -25.9692, -25.9692)
+# )
+# 
+# rownames(coordinates) <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Manica", "Sofala", "Inhambane", "Maputo_Rainy", "Maputo")
+# 
+# coordinates<- coordinates[rownames(coordinates) %in% provinces, ]
 
 #calculate harvesine distance
-geo_dist <- distm(coordinates, fun = distHaversine)
+geo_dist <- distm(HFS_coord_mean, fun = distHaversine)
 rownames(geo_dist) <- provinces
 colnames(geo_dist) <- provinces
 
@@ -609,7 +658,7 @@ perform_mantel_test <- function(distance, geo_dist) {
   plot <- ggplot(mat, aes(y = deest, x = geo / 1000)) + 
     geom_point(size = 4, alpha = 0.75, colour = "black", shape = 21, aes(fill = geo / 1000)) + 
     geom_smooth(method = "lm", colour = "black", alpha = 0.2) + 
-    labs(x = "Harvesine Distance", y = "Bray-Curtis Dissimilarity", fill = "Kilometers") + 
+    labs(x = "Harvesine Distance (Km)", y = "Bray-Curtis Dissimilarity", fill = "Kilometers") + 
     theme(axis.text.x = element_text(colour = "black", size = 12), 
           axis.text.y = element_text(size = 11, colour = "black"), 
           axis.title = element_text(size = 14, colour = "black"), 
@@ -617,9 +666,9 @@ perform_mantel_test <- function(distance, geo_dist) {
           panel.border = element_rect(fill = NA, colour = "black"),
           legend.position = "right",
           legend.text = element_text(size = 10),
-          legend.title = element_text(size = 11)) +
-    scale_fill_continuous(high = "navy", low = "skyblue")
-  
+          legend.title = element_text(size = 11))+ #+ scale_fill_continuous(high = "navy", low = "skyblue")
+    guides(fill="none")
+    
   # Return Mantel test result and the scatter plot
   return(list(mantel_result = mantel_result, plot = plot))
 }
@@ -638,4 +687,4 @@ p <- p +
   annotate("text", x = Inf, y = -Inf, label = paste("Mantel's R:", mantelsR, "\n", "p-value:", pval), 
            hjust = 1.1, vjust = -0.5, size = 5, color = "black")
 
-ggsave(paste0("mantel_pop_allele_Freqs", SAMPLING,".png"), p, width = 8, height = 6, bg = "white")
+ggsave(paste0("mantel_pop_allele_Freqs", SAMPLING,"_revised.png"), p, width = 8, height = 6, bg = "white")
