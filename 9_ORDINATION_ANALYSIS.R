@@ -7,8 +7,9 @@ library(ape)
 library(geosphere)
 library(Rtsne)
 library(reshape2)
+library(haven)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
@@ -185,6 +186,14 @@ af_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        x = paste0("PCo 1: ", variance_explained_axis1, "%\n"),
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
+  theme(
+    legend.position = "bottom", 
+    legend.box = "vertical",  
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    legend.byrow = TRUE,  # Place legends by row
+    axis.title.x = element_text(size = 14),  # Increase x-axis label size
+    axis.title.y = element_text(size = 14)) +  # Increase y-axis label size
   guides(fill = FALSE, color = FALSE, shape = FALSE)+
   scale_color_manual(values = province_colors)+
   scale_shape_manual(values = shapes)
@@ -221,8 +230,21 @@ pa_pcoa <- ggplot(pcs_with_labels, aes(x = Axis.1, y = Axis.2, color = province,
        x = paste0("PCo 1: ", variance_explained_axis1, "%\n"),
        y = paste0("PCo 2: ", variance_explained_axis2, "%")) +
   theme_minimal()+
+  theme(
+    legend.position = "bottom", 
+    legend.box = "vertical",  
+    legend.title = element_text(size = 15),
+    legend.text = element_text(size = 15),
+    legend.byrow = F,  # Place legends by row
+    axis.title.x = element_text(size = 14),  # Increase x-axis label size
+    axis.title.y = element_text(size = 14)   # Increase y-axis label size
+  ) +
   scale_color_manual(values = province_colors)+
-  scale_shape_manual(values = shapes)
+  scale_shape_manual(values = shapes)+
+  guides(
+    color = guide_legend(ncol = 3),  # Arrange color legend in 3 columns
+    shape = guide_legend(ncol = 3)   # Arrange shape legend in 3 columns
+  )
 
 pa_pcoa
 
