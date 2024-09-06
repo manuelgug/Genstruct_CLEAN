@@ -17,13 +17,13 @@ db <- read_dta('DrugRes_2021_2022_DB_ALLDATA_1Jan2024.dta')
 if (SAMPLING == 2022){
   
   #dry season is removed in the coi file, so no labels for dry
-  provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
-  province_colors <- c(Niassa = "firebrick4", Cabo_Delgado = "red", Nampula = "indianred1", Zambezia = "darkgreen", Tete = "forestgreen", Manica_Rainy = "springgreen2", Sofala  = "chartreuse", Inhambane = "cornflowerblue", Maputo_Rainy = "turquoise")
+  provinces <- c("Cabo_Delgado", "Niassa", "Nampula", "Zambezia", "Tete", "Sofala", "Manica", "Inhambane", "Maputo") #ordered from north to south
+  province_colors <- c(Niassa = "firebrick4", Cabo_Delgado = "red", Nampula = "indianred1", Zambezia = "darkgreen", Tete = "forestgreen", Manica = "springgreen2", Sofala  = "chartreuse", Inhambane = "cornflowerblue", Maputo = "turquoise")
   
   
 } else if (SAMPLING == 2021){
   
-  provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane", "Maputo") #ordered from north to south
+  provinces <- c("Cabo_Delgado", "Niassa", "Nampula", "Zambezia", "Tete", "Sofala", "Manica", "Inhambane", "Maputo")  #ordered from north to south
   province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen", Manica = "green", Inhambane = "cornflowerblue", Maputo = "deepskyblue")
   
 }else{
@@ -35,6 +35,8 @@ if (SAMPLING == 2022){
 #######################################################
 # 12.- IBD: Proportion of related pairwise infections using IBD between provinces and regions
 #######################################################
+
+combined_df_merged$province <- gsub("_Rainy", "", combined_df_merged$province)
 
 #add VOC
 combined_df_merged <- merge(combined_df_merged, db[c("NIDA2", "dhps_doub_95_b")], by = "NIDA2")
@@ -103,25 +105,30 @@ decifer_results <- ibdDat(dsmp, coi, afreq,  pval = TRUE, confint = TRUE, rnull 
 saveRDS(decifer_results, paste0("decifer_results_", SAMPLING, ".RDS")) ## AQUÍ VOY
 decifer_results <- readRDS(paste0("decifer_results_", SAMPLING, ".RDS"))
 
-pdf(paste0("decifer_results_plot", SAMPLING, ".pdf"), width = 15, height = 15) 
+#remove "Rainy_"
+names(nsite) <- gsub("_Rainy", "", names(nsite))
+
+
+pdf(paste0("decifer_results_plot222", SAMPLING, ".pdf"), width = 17, height = 15)
 
 layout(matrix(1:2, 1), width = c(15, 1))
-par(mar = c(1, 1, 2, 1))
+par(mar = c(1, 3, 2, 1))  # Increased left margin from 1 to 5
+
 alpha <- 0.01         
 nsmp  <- length(dsmp)
 atsep <- cumsum(nsite)[-length(nsite)]
 isig  <- which(decifer_results[, , "p_value"] <= alpha, arr.ind = TRUE)
 dmat  <- decifer_results[, , "estimate"]
-dmat[upper.tri(dmat)] <- t(dmat)[upper.tri(t(dmat))] 
+dmat[upper.tri(dmat)] <- t(dmat)[upper.tri(t(dmat))]
 
 plotRel(dmat, isig = isig, draw_diag = TRUE, alpha = alpha, idlab = FALSE, side_id = c(2, 3), srt_id = c(25, 65), lwd_diag = 0.5, border_sig = "darkviolet")
 
 abline(v = atsep, h = atsep, col = "gray45", lty = 5)
 atclin <- cumsum(nsite) - nsite/2
-mtext(provinces, side = 3, at = atclin, line = 0.2)
-mtext(provinces, side = 2, at = atclin, line = 0.2)
+mtext(provinces, side = 3, at = atclin, line = 0.2, cex = 1.35)
+mtext(provinces, side = 2, at = atclin, line = 0.2, cex = 1.35)
 
-par(mar = c(1, 0, 2, 3))
+par(mar = c(2, 0, 2, 3))
 plotColorbar()
 
 dev.off()
