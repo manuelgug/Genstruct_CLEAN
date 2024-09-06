@@ -3,25 +3,27 @@ library(ggsignif)
 library(ggplot2)
 library(dplyr)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
 
-
+region_colors <- c(South = "#619CFF", Centre = "#00BA38", North = "#F8766D")
 
 #set labels
 if (SAMPLING == 2022){
   
   #dry season is removed in the coi file, so no labels for dry
-  provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
+  #provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
+  provinces <- c("Maputo_Rainy", "Inhambane", "Manica_Rainy", "Sofala", "Tete", "Zambezia", "Nampula", "Niassa", "Cabo_Delgado")
   province_colors <- c(Niassa = "firebrick4", Cabo_Delgado = "red", Nampula = "indianred1", Zambezia = "darkgreen", Tete = "forestgreen", Manica_Rainy = "springgreen2", Sofala  = "chartreuse", Inhambane = "cornflowerblue", Maputo_Rainy = "turquoise")
   
   
 } else if (SAMPLING == 2021){
   
-  provinces <- c("Niassa", "Nampula", "Zambezia", "Inhambane") #ordered from north to south "Maputo" and "Manica" out because small N
-  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen",  Inhambane = "cornflowerblue") #Maputo = "deepskyblue", Manica = "green",
+  #provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane", "Maputo") #ordered from north to south
+  provinces <- c("Maputo_Rainy", "Inhambane", "Manica_Rainy", "Sofala", "Tete", "Zambezia", "Nampula", "Niassa", "Cabo_Delgado")
+  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen", Manica = "green", Inhambane = "cornflowerblue", Maputo = "deepskyblue")
   
 }else{
   
@@ -110,8 +112,12 @@ if (SAMPLING == 2021){
 library(nlme)
 
 # Define the population levels
-regions <- c("North", "Centre", "South")
+regions <- c("South", "Centre", "North")
 
+#remove "Rainy" from everywhere
+processed_He_results$population  <- gsub("_Rainy", "", processed_He_results$population)
+names(province_colors) <- gsub("_Rainy", "", names(province_colors))
+provinces <- gsub("_Rainy", "", provinces)
 
 ###
 # Function to fit LLM and collect results for each reference level
@@ -276,21 +282,25 @@ comparisons <- lapply(1:nrow(sigs), function(i) {
   c(as.character(sigs$reference_pop[i]), as.character(sigs$compared_pop[i]))
 })
 
-final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est., color = compared_pop)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.3, linewidth = 1) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   labs(title = "",
-       x = "Province",
-       y = "He estimate") +
+       x = "",
+       y = "He estimate")+
   geom_signif(
     comparisons = comparisons,
     annotations = sigs$significance,
     y_position = seq(max(plotp$data$upper) + 0.01, by = 0.01, length.out = nrow(sigs)),
-    tip_length = 0.01
+    tip_length = 0.01, color= "black"
   )+
-  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
+  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")+
+  scale_color_manual(values = province_colors)+
+  guides(color =F)
+
+final_plot
 ################################
 
 
@@ -315,21 +325,26 @@ comparisons <- lapply(1:nrow(sigs), function(i) {
   c(as.character(sigs$reference_pop[i]), as.character(sigs$compared_pop[i]))
 })
 
-final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est.)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+final_plot <- ggplot(plotp$data, aes(x = compared_pop, y = est., color = compared_pop)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.3, linewidth = 1) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   labs(title = "",
-       x = "Region",
+       x = "",
        y = "He estimate") +
   geom_signif(
     comparisons = comparisons,
     annotations = sigs$significance,
     y_position = seq(max(plotp$data$upper) + 0.01, by = 0.01, length.out = nrow(sigs)),
-    tip_length = 0.01
+    tip_length = 0.01, color = "black"
   )+
-  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")
+  annotate("text", x = Inf, y = -Inf, label = anovap_for_plot, hjust = 1.1, vjust = -1.1, size = 3, color = "black")+
+  scale_color_manual(values = region_colors)+
+  guides(color =F)
+
+final_plot
+
 ################################
 
 write.csv(results_regions$llm_tables_significant_pariwise, paste0("lmm_tables_significant_pariwise_regions_", SAMPLING, ".csv"), row.names = F)
