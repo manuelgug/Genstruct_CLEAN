@@ -4,27 +4,27 @@ library(dplyr)
 library(reshape2)
 library(ggpubr)
 
-SAMPLING <- 2021 # 2021 or 2022
+SAMPLING <- 2022 # 2021 or 2022
 
 combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS")) 
 combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo_Dry", "Manica_Dry")), ] # remove dry
 
-
+region_colors <- c(South = "#619CFF", Centre = "#00BA38", North = "#F8766D")
 
 #set labels
 if (SAMPLING == 2022){
   
   #dry season is removed in the coi file, so no labels for dry
-  provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
+  #provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
+  provinces <- c("Maputo_Rainy", "Inhambane", "Manica_Rainy", "Sofala", "Tete", "Zambezia", "Nampula", "Niassa", "Cabo_Delgado")
   province_colors <- c(Niassa = "firebrick4", Cabo_Delgado = "red", Nampula = "indianred1", Zambezia = "darkgreen", Tete = "forestgreen", Manica_Rainy = "springgreen2", Sofala  = "chartreuse", Inhambane = "cornflowerblue", Maputo_Rainy = "turquoise")
   
   
 } else if (SAMPLING == 2021){
   
-  combined_df_merged <- combined_df_merged[!(combined_df_merged$province %in% c("Maputo", "Manica")), ] # remove dry
-  
-  provinces <- c("Niassa", "Nampula", "Zambezia", "Inhambane") #ordered from north to south "Maputo" and "Manica" out because small N
-  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen",  Inhambane = "cornflowerblue") #Maputo = "deepskyblue", Manica = "green",
+  #provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane", "Maputo") #ordered from north to south
+  provinces <- c("Maputo_Rainy", "Inhambane", "Manica_Rainy", "Sofala", "Tete", "Zambezia", "Nampula", "Niassa", "Cabo_Delgado")
+  province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen", Manica = "green", Inhambane = "cornflowerblue", Maputo = "deepskyblue")
   
 }else{
   
@@ -176,7 +176,12 @@ mean_Fws_per_individual<- heterozygosity_data_filtered %>%
 write.csv(mean_Fws_per_individual, paste0("mean_Fws_per_individual_", SAMPLING, ".csv"), row.names = F)
 
 
-regions <- c("North", "Centre", "South")
+regions <- c("South", "Centre", "North")
+
+#remove "Rainy" from everywhere
+mean_Fws_per_individual$province  <- gsub("_Rainy", "", mean_Fws_per_individual$province)
+names(province_colors) <- gsub("_Rainy", "", names(province_colors))
+provinces <- gsub("_Rainy", "", provinces)
 
 mean_Fws_per_individual$province <- factor(mean_Fws_per_individual$province, levels = provinces)
 mean_Fws_per_individual$region <- factor(mean_Fws_per_individual$region, levels = regions)
@@ -192,6 +197,9 @@ combos_pairwise_province_fws_province <- lapply(1:nrow(signif_p.pairwise_provinc
   as.character(c(signif_p.pairwise_province_fws[i, "Var1"], 
                  signif_p.pairwise_province_fws[i, "Var2"]))
 })
+
+mean_Fws_per_individual_nodry <- mean_Fws_per_individual %>%
+  filter(!grepl("Dry", province))
 
 if (SAMPLING == 2021){
   
@@ -256,7 +264,8 @@ if (SAMPLING == 2021){
     #ggtitle("Province Connectivity") +
     labs(x = "Province", y = "Genome-wide 1-Fws") +
     guides(color = FALSE, fill = FALSE) +
-    scale_fill_manual(values = province_colors) #+
+    scale_fill_manual(values = province_colors) +
+    scale_color_manual(values = region_colors)#+
     # stat_compare_means(comparisons = combos_pairwise_province_fws_province, aes(label = after_stat(p.signif)),
     #                    method = "wilcox.test")
   
@@ -279,7 +288,7 @@ if (SAMPLING == 2021){
         comparisons = list(c(as.character(signif_p.pairwise_province_fws$Var1)[i], as.character(signif_p.pairwise_province_fws$Var2)[i])),
         annotations = signif_p.pairwise_province_fws$label[i],
         map_signif_level = TRUE,
-        y_position = max(mean_Fws_per_individual_nodry$mean_indiv_fws_region) + 0.1 * (i + 0.1)
+        y_position = max(mean_Fws_per_individual$mean_indiv_fws_region) + 0.1 * (i + 0.1)
       )
     }
   }
@@ -290,11 +299,6 @@ if (SAMPLING == 2021){
   
 }
 
-
-
-
-mean_Fws_per_individual_nodry <- mean_Fws_per_individual %>%
-  filter(!grepl("Dry", province))
 
 pairwise_region_fws <- pairwise.wilcox.test(mean_Fws_per_individual_nodry$mean_indiv_fws_region, 
                                             mean_Fws_per_individual_nodry$region, p.adjust.method = "bonferroni")
@@ -316,6 +320,8 @@ reg_fws <- ggplot(mean_Fws_per_individual_nodry, aes(x = region, y = mean_indiv_
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
   labs(x = "", y = "Genome-wide 1-Fws") +
+  scale_color_manual(values = region_colors)+
+  scale_fill_manual(values = region_colors)+
   guides(fill = FALSE, color = FALSE) #+
   #stat_compare_means(comparisons = combos_pairwise_region_fws_province, aes(label = after_stat(p.signif)),
   #                  method = "wilcox.test")
