@@ -15,17 +15,21 @@ combined_df_merged <- readRDS(paste0("combined_df_merged_", SAMPLING, "_only.RDS
 
 mcmc_results <- readRDS(paste0("all_samples_complete_filtered_MOIRE-RESULTS_", SAMPLING, "_only_FOR_MOI.RDS"))
 
+region_colors <- c(South = "#619CFF", Centre = "#00BA38", North = "#F8766D")
+
 #set labels
 if (SAMPLING == 2022){
   
   #dry season is removed in the coi file, so no labels for dry
-  provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
+  #provinces <- c("Niassa", "Cabo_Delgado", "Nampula", "Zambezia", "Tete", "Manica_Rainy", "Sofala", "Inhambane", "Maputo_Rainy") #ordered from north to south
+  provinces <- c("Maputo_Rainy", "Inhambane", "Manica_Rainy", "Sofala", "Tete", "Zambezia", "Nampula", "Niassa", "Cabo_Delgado")
   province_colors <- c(Niassa = "firebrick4", Cabo_Delgado = "red", Nampula = "indianred1", Zambezia = "darkgreen", Tete = "forestgreen", Manica_Rainy = "springgreen2", Sofala  = "chartreuse", Inhambane = "cornflowerblue", Maputo_Rainy = "turquoise")
 
   
 } else if (SAMPLING == 2021){
   
-  provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane", "Maputo") #ordered from north to south
+  #provinces <- c("Niassa", "Nampula", "Zambezia", "Manica", "Inhambane", "Maputo") #ordered from north to south
+  provinces <- c("Maputo_Rainy", "Inhambane", "Manica_Rainy", "Sofala", "Tete", "Zambezia", "Nampula", "Niassa", "Cabo_Delgado")
   province_colors <- c(Niassa = "firebrick4", Nampula = "indianred1", Zambezia = "darkgreen", Manica = "green", Inhambane = "cornflowerblue", Maputo = "deepskyblue")
   
 }else{
@@ -33,6 +37,7 @@ if (SAMPLING == 2022){
   print(paste0("No samples for year ", SAMPLING))
   
 }
+
 
 #######################################################
 # 7.- Present MOI/eMOI results overall and means per province and region for each year
@@ -83,7 +88,14 @@ polyclonal_percentage_province <- coi_results %>%
   summarise(polyclonal_percentage_province = mean(polyclonal_from_ecoi_med == "polyclonal") * 100) %>%
   ungroup()
 
-regions <- c("North", "Centre", "South")
+#regions <- c("North", "Centre", "South")
+regions <- c("South", "Centre", "North")
+
+#remove "Rainy" from everywhere
+coi_results$province  <- gsub("_Rainy", "", coi_results$province)
+polyclonal_percentage_province$province  <- gsub("_Rainy", "", polyclonal_percentage_province$province)
+names(province_colors) <- gsub("_Rainy", "", names(province_colors))
+provinces <- gsub("_Rainy", "", provinces)
 
 coi_results$province <- factor(coi_results$province, levels = provinces)
 coi_results$region <- factor(coi_results$region, levels = regions)
@@ -230,11 +242,14 @@ c1 <- ggplot(coi_results, aes(x = province, y = post_effective_coi_med, fill = p
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
   scale_fill_discrete(name = "Region") +
-  labs(x = "", y = "eCOI") +
+  labs(x = "", y = "eMOI") +
   guides(color = FALSE, fill = FALSE) +
-  scale_fill_manual(values = province_colors) #+
+  scale_fill_manual(values = province_colors)+
+  scale_color_manual(values = region_colors)#+
   #stat_compare_means(comparisons = pairwise_province_combinations, aes(label = after_stat(p.signif)),
   #                   method = "wilcox.test")
+
+c1 
 
 #############################3
 # Prepare significance labels
@@ -303,7 +318,9 @@ d1 <- ggplot(coi_results_region, aes(x = region, y = post_effective_coi_med, fil
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
   scale_fill_discrete(name = "Region") +
-  labs(x = "", y = "eCOI") +
+  labs(x = "", y = "eMOI") +
+  scale_fill_manual(values = region_colors)+
+  scale_color_manual(values = region_colors)+
   guides(color = FALSE, fill = FALSE) #+
   #stat_compare_means(comparisons = pairwise_region_combinations, aes(label = after_stat(p.signif)),
   #                   method = "wilcox.test")
@@ -447,7 +464,7 @@ summary_data <- coi_results_region %>%
   )
 
 summary_data
-summary_data$region <- factor(summary_data$region, levels = c("North", "Centre", "South"))
+summary_data$region <- factor(summary_data$region, levels = c("South", "Centre", "North"))
 
 
 e<- ggplot(summary_data, aes(x = region, y = prop_poly, fill = region)) +
@@ -483,6 +500,8 @@ for (i in 1:nrow(pairwise_results)) {
     )
   }
 }
+
+e
 
 ggsave(paste0("perc_polyclonal_regions_", SAMPLING, ".png"), e, width = 6, height = 5, bg = "white")
 
@@ -581,6 +600,8 @@ for (i in 1:nrow(pairwise_results)) {
     )
   }
 }
+
+f
 
 ggsave(paste0("perc_polyclonal_provinces_", SAMPLING, ".png"), f, width = 8, height = 6.5, bg = "white")
 
